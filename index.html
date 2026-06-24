@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Forensics — Attorney Review Report</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0d0f14;
+      --surface:      #161a23;
+      --surface2:     #1e2330;
+      --border:       #2a3045;
+      --border-light: #3a4560;
+      --text:         #e8ecf4;
+      --text-muted:   #7a8499;
+      --text-dim:     #4a5570;
+      --accent:       #4f8ef7;
+      --accent-glow:  rgba(79,142,247,0.18);
+      --green:        #25d366;
+      --green-dim:    rgba(37,211,102,0.12);
+      --yellow:       #fffc00;
+      --yellow-dim:   rgba(255,252,0,0.10);
+      --purple:       #bf5af2;
+      --purple-dim:   rgba(191,90,242,0.12);
+      --red:          #ff453a;
+      --orange:       #ff9f0a;
+      --tl-width:     300px;
+      --meta-width:   320px;
+      --phone-h:      680px;
+      --radius:       14px;
+      --radius-sm:    8px;
+    }
+
+    html, body { height: 100%; font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+
+    /* ── Top Header ──────────────────────────────────────────── */
+    #header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 62px;
+      background: rgba(13,15,20,0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 24px; gap: 20px;
+    }
+    .header-badge {
+      background: linear-gradient(135deg, #ff453a, #ff9f0a);
+      color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; padding: 3px 10px; border-radius: 20px;
+    }
+    .header-title {
+      font-size: 15px; font-weight: 600; color: var(--text);
+      flex: 1;
+    }
+    .header-title span { color: var(--text-muted); font-weight: 400; }
+    .header-meta { display: flex; gap: 24px; align-items: center; }
+    .header-meta .hm-item { font-size: 12px; color: var(--text-muted); }
+    .header-meta .hm-item strong { color: var(--text); font-size: 13px; display: block; }
+
+    /* Case ID pill */
+    .case-id {
+      font-size: 11px; font-weight: 600; letter-spacing: 1px;
+      color: var(--accent); background: var(--accent-glow);
+      border: 1px solid rgba(79,142,247,0.3);
+      padding: 4px 12px; border-radius: 20px;
+    }
+
+    /* Filter bar */
+    #filterbar {
+      position: fixed; top: 62px; left: 0; right: 0; z-index: 99;
+      height: 48px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 24px; gap: 12px;
+    }
+    .filter-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-right: 4px; }
+    .filter-chip {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 14px 4px 10px; border-radius: 20px;
+      border: 1px solid var(--border); background: var(--surface2);
+      font-size: 12px; color: var(--text-muted); cursor: pointer;
+      transition: all 0.2s; user-select: none;
+    }
+    .filter-chip:hover { border-color: var(--border-light); color: var(--text); }
+    .filter-chip.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+    .filter-chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-all    { background: var(--accent); }
+    .dot-imsg   { background: #1d8cf8; }
+    .dot-wa     { background: var(--green); }
+    .dot-snap   { background: var(--yellow); }
+    .dot-sms    { background: #8e8e93; }
+
+    /* Devices row */
+    .filter-sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+    .device-chip {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 14px; border-radius: 20px;
+      border: 1px solid var(--border); background: var(--surface2);
+      font-size: 12px; color: var(--text-muted); cursor: pointer;
+      transition: all 0.2s; user-select: none;
+    }
+    .device-chip.active { background: rgba(191,90,242,0.12); border-color: var(--purple); color: var(--purple); }
+    .device-chip .avatar { width: 18px; height: 18px; border-radius: 50%; font-size: 10px; display:flex;align-items:center;justify-content:center;font-weight:700; }
+
+    /* ── Main 3-Panel Layout ─────────────────────────────────── */
+    #app {
+      position: fixed;
+      top: 110px; bottom: 0; left: 0; right: 0;
+      display: grid;
+      grid-template-columns: var(--tl-width) 1fr var(--meta-width);
+    }
+
+    /* ── LEFT: Timeline Panel ───────────────────────────────── */
+    #timeline-panel {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+      text-transform: uppercase; color: var(--text-muted);
+    }
+    .panel-count {
+      font-size: 11px; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); padding: 2px 8px; border-radius: 10px;
+    }
+
+    #timeline-scroll { flex: 1; overflow-y: auto; padding: 12px 0; }
+    #timeline-scroll::-webkit-scrollbar { width: 4px; }
+    #timeline-scroll::-webkit-scrollbar-track { background: transparent; }
+    #timeline-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* Date group header */
+    .tl-date-group { padding: 8px 18px 4px; }
+    .tl-date-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--text-dim);
+    }
+
+    /* Timeline item */
+    .tl-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 18px 8px 14px; cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all 0.15s; position: relative;
+    }
+    .tl-item:hover { background: var(--surface2); }
+    .tl-item.active {
+      border-left-color: var(--accent);
+      background: rgba(79,142,247,0.06);
+    }
+    .tl-item.active .tl-time { color: var(--accent); }
+
+    .tl-dot-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 4px; }
+    .tl-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid var(--bg);
+    }
+    .tl-line { width: 1px; flex: 1; min-height: 20px; background: var(--border); margin-top: 4px; }
+
+    .tl-content { flex: 1; min-width: 0; }
+    .tl-header { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 2px; }
+    .tl-name { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tl-time { font-size: 10px; color: var(--text-dim); flex-shrink: 0; }
+    .tl-preview { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tl-tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+    .tl-tag {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; padding: 1px 6px; border-radius: 4px;
+    }
+    .tag-imsg  { background: rgba(29,140,248,0.15); color: #1d8cf8; }
+    .tag-wa    { background: var(--green-dim);  color: var(--green); }
+    .tag-snap  { background: var(--yellow-dim); color: #cccc00; }
+    .tag-sms   { background: rgba(142,142,147,0.12); color: #8e8e93; }
+    .tag-flagged { background: rgba(255,69,58,0.15); color: var(--red); }
+    .tag-evidence { background: rgba(255,159,10,0.15); color: var(--orange); }
+
+    /* incident line */
+    .tl-incident-marker {
+      margin: 6px 14px; padding: 8px 12px;
+      background: rgba(255,69,58,0.08);
+      border: 1px solid rgba(255,69,58,0.3);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .tl-incident-marker .inc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 6px var(--red); }
+    .tl-incident-marker span { font-size: 11px; font-weight: 700; color: var(--red); letter-spacing: 0.5px; }
+
+    /* ── MIDDLE: Phone Panel ────────────────────────────────── */
+    #phone-panel {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 24px;
+      overflow-y: auto; gap: 16px;
+      background: var(--bg);
+    }
+    #phone-panel::-webkit-scrollbar { width: 4px; }
+    #phone-panel::-webkit-scrollbar-track { background: transparent; }
+    #phone-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* Conversation header above phone */
+    #convo-header {
+      width: 100%; max-width: 420px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 18px; display: flex; align-items: center; gap: 14px;
+    }
+    .convo-avatars { display: flex; position: relative; }
+    .convo-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 700; flex-shrink: 0;
+      border: 2px solid var(--bg);
+    }
+    .convo-avatar:nth-child(2) { margin-left: -12px; }
+    .convo-info { flex: 1; min-width: 0; }
+    .convo-names { font-size: 14px; font-weight: 700; color: var(--text); }
+    .convo-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .convo-app-badge {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+    }
+    .badge-imsg { background: rgba(29,140,248,0.15); color: #1d8cf8; border: 1px solid rgba(29,140,248,0.3); }
+    .badge-wa   { background: var(--green-dim); color: var(--green); border: 1px solid rgba(37,211,102,0.3); }
+    .badge-snap { background: var(--yellow-dim); color: #a8a200; border: 1px solid rgba(255,252,0,0.3); }
+    .badge-sms  { background: rgba(142,142,147,0.1); color: #8e8e93; border: 1px solid rgba(142,142,147,0.3); }
+
+    /* ── iPhone Frame ─────────────────────────────────────── */
+    .phone-wrap { width: 100%; max-width: 380px; position: relative; }
+
+    /* iPhone 15 Pro */
+    .iphone-frame {
+      width: 100%; padding-bottom: 216%;
+      position: relative;
+      background: linear-gradient(160deg, #3a3a3c 0%, #1c1c1e 40%, #2a2a2c 100%);
+      border-radius: 54px;
+      box-shadow:
+        0 0 0 1px #4a4a4c,
+        0 0 0 2px #1a1a1c,
+        0 2px 4px rgba(0,0,0,0.5),
+        0 20px 60px rgba(0,0,0,0.8),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .iphone-inner {
+      position: absolute; top: 7px; left: 7px; right: 7px; bottom: 7px;
+      background: var(--bg); border-radius: 48px; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    /* Dynamic island */
+    .iphone-island {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      width: 120px; height: 34px; background: #000;
+      border-radius: 20px; z-index: 10;
+    }
+    /* Status bar */
+    .iphone-statusbar {
+      height: 52px; padding: 16px 24px 0;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; z-index: 5;
+    }
+    .sb-time { font-size: 15px; font-weight: 700; color: var(--text); }
+    .sb-icons { display: flex; align-items: center; gap: 6px; }
+    .sb-icons svg { width: 16px; height: 16px; fill: var(--text); }
+
+    /* App header inside phone */
+    .iphone-app-header {
+      flex-shrink: 0; padding: 10px 16px 12px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .app-header-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; flex-shrink: 0;
+    }
+    .app-header-info { flex: 1; }
+    .app-header-name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .app-header-status { font-size: 10px; color: var(--text-muted); }
+    .app-header-icon { width: 28px; height: 28px; border-radius: 8px; display:flex;align-items:center;justify-content:center; font-size: 14px; }
+    .app-icon-imsg { background: linear-gradient(135deg,#1d8cf8,#0af); }
+    .app-icon-wa   { background: #25d366; }
+    .app-icon-snap { background: #fffc00; }
+
+    /* Chat messages area */
+    .iphone-chat {
+      flex: 1; overflow-y: auto; padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .iphone-chat::-webkit-scrollbar { width: 3px; }
+    .iphone-chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+    /* Timestamp divider */
+    .chat-date-div {
+      display: flex; align-items: center; justify-content: center;
+      margin: 6px 0;
+    }
+    .chat-date-div span {
+      font-size: 10px; color: var(--text-dim); background: var(--surface);
+      padding: 3px 10px; border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    /* Bubbles */
+    .bubble-row {
+      display: flex; align-items: flex-end; gap: 6px;
+      max-width: 85%;
+    }
+    .bubble-row.out { align-self: flex-end; flex-direction: row-reverse; }
+    .bubble-row.in  { align-self: flex-start; }
+
+    .bubble-avatar-sm {
+      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; margin-bottom: 14px;
+    }
+
+    .bubble {
+      padding: 9px 13px; border-radius: 18px; position: relative;
+      max-width: 100%; word-break: break-word;
+    }
+    .bubble p { font-size: 13px; line-height: 1.4; }
+    .bubble-meta { font-size: 9px; margin-top: 3px; opacity: 0.6; text-align: right; }
+
+    /* iMessage blue */
+    .bubble-imsg-out { background: linear-gradient(135deg, #1d8cf8, #0af); color: #fff; border-bottom-right-radius: 4px; }
+    .bubble-imsg-in  { background: var(--surface2); color: var(--text); border-bottom-left-radius: 4px; }
+
+    /* WhatsApp */
+    .bubble-wa-out { background: #005c4b; color: #e9edef; border-bottom-right-radius: 4px; }
+    .bubble-wa-in  { background: #1f2c34; color: #e9edef; border-bottom-left-radius: 4px; }
+
+    /* Snapchat */
+    .bubble-snap-out { background: #3a3a00; color: #fffc00; border-bottom-right-radius: 4px; border: 1px solid rgba(255,252,0,0.2); }
+    .bubble-snap-in  { background: var(--surface2); color: var(--text); border-bottom-left-radius: 4px; border: 1px solid rgba(255,252,0,0.1); }
+
+    /* SMS */
+    .bubble-sms-out { background: #1a73e8; color: #fff; border-bottom-right-radius: 4px; }
+    .bubble-sms-in  { background: #2a2a2e; color: var(--text); border-bottom-left-radius: 4px; }
+
+    /* Snap viewed indicator */
+    .snap-viewed { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #cccc00; margin-top: 2px; }
+
+    /* Deleted / flagged overlay */
+    .bubble-flagged { outline: 1.5px solid var(--red); outline-offset: 2px; }
+    .flag-icon { position:absolute; top:-6px; right:-6px; width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center; }
+
+    /* Phone input bar */
+    .iphone-input {
+      flex-shrink: 0; padding: 10px 14px 20px;
+      display: flex; align-items: center; gap: 8px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .iphone-input-box {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 8px 14px; font-size: 12px; color: var(--text-dim);
+    }
+
+    /* Side buttons */
+    .iphone-btn-l, .iphone-btn-r {
+      position: absolute; width: 3px; border-radius: 2px 0 0 2px;
+      background: linear-gradient(180deg, #3a3a3c, #2a2a2c);
+    }
+    .iphone-btn-l { left: -4px; }
+    .iphone-btn-r { right: -4px; border-radius: 0 2px 2px 0; }
+
+    /* ── Samsung Frame ─────────────────────────────────────── */
+    .samsung-frame {
+      width: 100%; padding-bottom: 210%;
+      position: relative;
+      background: linear-gradient(160deg, #2c2c2e 0%, #1a1a1c 60%);
+      border-radius: 44px;
+      box-shadow:
+        0 0 0 1px #3a3a3c,
+        0 0 0 2px #0a0a0c,
+        0 20px 60px rgba(0,0,0,0.8),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .samsung-inner {
+      position: absolute; top: 8px; left: 8px; right: 8px; bottom: 8px;
+      background: var(--bg); border-radius: 37px; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .samsung-punch {
+      position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+      width: 12px; height: 12px; background: #000; border-radius: 50%; z-index: 10;
+    }
+    .samsung-statusbar {
+      height: 44px; padding: 14px 20px 0;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    /* ── RIGHT: Metadata Panel ──────────────────────────────── */
+    #meta-panel {
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    #meta-scroll { flex: 1; overflow-y: auto; padding: 16px; }
+    #meta-scroll::-webkit-scrollbar { width: 4px; }
+    #meta-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .meta-section { margin-bottom: 20px; }
+    .meta-section-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .meta-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .meta-row {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 7px 0; border-bottom: 1px solid rgba(42,48,69,0.5);
+      gap: 8px;
+    }
+    .meta-row:last-child { border-bottom: none; }
+    .meta-key { font-size: 11px; color: var(--text-muted); flex-shrink: 0; min-width: 90px; }
+    .meta-val { font-size: 11px; color: var(--text); text-align: right; word-break: break-all; }
+    .meta-val.mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 10px; color: var(--accent); }
+    .meta-val.badge-green { color: var(--green); }
+    .meta-val.badge-red   { color: var(--red); }
+    .meta-val.badge-orange { color: var(--orange); }
+
+    /* Hash block */
+    .hash-block {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 10px 12px; margin-bottom: 8px;
+    }
+    .hash-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
+    .hash-val { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 9px; color: var(--accent); word-break: break-all; line-height: 1.5; }
+
+    /* Flag action */
+    .meta-action-row { display: flex; gap: 8px; margin-top: 6px; }
+    .meta-btn {
+      flex: 1; padding: 8px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 600;
+      border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted);
+      cursor: pointer; text-align: center; transition: all 0.2s;
+    }
+    .meta-btn:hover { border-color: var(--border-light); color: var(--text); }
+    .meta-btn.danger { border-color: rgba(255,69,58,0.3); color: var(--red); background: rgba(255,69,58,0.06); }
+    .meta-btn.danger:hover { background: rgba(255,69,58,0.12); }
+    .meta-btn.primary { border-color: rgba(79,142,247,0.4); color: var(--accent); background: var(--accent-glow); }
+
+    /* Chain of custody */
+    .coc-item {
+      display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(42,48,69,0.5);
+    }
+    .coc-item:last-child { border-bottom: none; }
+    .coc-icon { width: 28px; height: 28px; border-radius: 50%; display:flex;align-items:center;justify-content:center; font-size: 12px; flex-shrink:0; }
+    .coc-text { flex: 1; }
+    .coc-action { font-size: 11px; font-weight: 600; color: var(--text); }
+    .coc-detail { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    .coc-ts { font-size: 9px; color: var(--text-dim); margin-top: 2px; font-family: monospace; }
+
+    /* Evidence confidence bar */
+    .conf-bar-wrap { margin-top: 6px; }
+    .conf-bar-label { display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:4px; }
+    .conf-bar-bg { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
+    .conf-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+
+    /* participant list */
+    .participant-card {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px;
+    }
+    .p-avatar { width: 32px; height: 32px; border-radius: 50%; display:flex;align-items:center;justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+    .p-info { flex: 1; min-width:0; }
+    .p-name { font-size: 12px; font-weight: 600; color: var(--text); }
+    .p-device { font-size: 10px; color: var(--text-muted); }
+    .p-role { font-size: 9px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; padding:2px 6px; border-radius:4px; }
+    .role-suspect { background:rgba(255,69,58,0.15); color:var(--red); }
+    .role-victim   { background:rgba(255,159,10,0.15); color:var(--orange); }
+    .role-witness  { background:rgba(79,142,247,0.15); color:var(--accent); }
+    .role-other    { background:rgba(142,142,147,0.1); color:#8e8e93; }
+
+    /* Tooltip on hover */
+    .tooltip { position:relative; }
+    .tooltip-text {
+      display:none; position:absolute; right:0; top:100%; margin-top:4px;
+      background: #1e2330; border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 12px; font-size:11px; color:var(--text); width:200px;
+      z-index:200; white-space:normal; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .tooltip:hover .tooltip-text { display:block; }
+
+    /* Scroll to incident button */
+    #incident-btn {
+      position: fixed; bottom: 24px; left: calc(var(--tl-width) + 24px); z-index:50;
+      background: linear-gradient(135deg, #ff453a, #ff9f0a);
+      color:#fff; font-size:12px; font-weight:700; padding:10px 18px;
+      border-radius:24px; cursor:pointer; border:none;
+      box-shadow: 0 4px 20px rgba(255,69,58,0.4);
+      display: flex; align-items:center; gap:8px;
+      transition: all 0.2s;
+    }
+    #incident-btn:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(255,69,58,0.5); }
+
+    /* Animations */
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+    .fade-in { animation: fadeIn 0.3s ease forwards; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .pulse { animation: pulse 2s infinite; }
+
+    /* Evidence counter strip */
+    .evidence-strip {
+      display: flex; gap: 12px; padding: 10px 16px;
+      background: var(--surface2); border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .ev-stat { text-align:center; flex:1; }
+    .ev-stat .ev-num { font-size: 18px; font-weight:700; }
+    .ev-stat .ev-lbl { font-size: 9px; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); }
+
+    /* Two-person same-convo highlight */
+    .same-party-badge {
+      display:inline-flex; align-items:center; gap:4px;
+      background: linear-gradient(135deg, rgba(191,90,242,0.15), rgba(79,142,247,0.15));
+      border: 1px solid rgba(191,90,242,0.3);
+      color: var(--purple); font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px;
+    }
+
+    /* Redacted blur */
+    .redacted { filter: blur(6px); user-select:none; pointer-events:none; }
+
+    /* Watermark */
+    .watermark {
+      position:fixed; bottom:16px; right:calc(var(--meta-width) + 16px);
+      font-size:10px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase;
+      opacity:0.4; user-select:none; pointer-events:none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════ HEADER ══════════════════════════ -->
+<header id="header">
+  <div class="header-badge">CONFIDENTIAL</div>
+  <div class="header-title">
+    Digital Forensics Report &mdash; <span>Text &amp; Messaging Evidence</span>
+  </div>
+  <div class="header-meta">
+    <div class="hm-item"><strong>Case No.</strong>2024-DF-00412</div>
+    <div class="hm-item"><strong>Examiner</strong>Det. J. Harris</div>
+    <div class="hm-item"><strong>Period</strong>Jun 10 – Jun 24, 2024</div>
+  </div>
+  <div class="case-id">ATTORNEY–CLIENT PRIVILEGED</div>
+</header>
+
+<!-- ══════════════════════════ FILTER BAR ══════════════════════ -->
+<div id="filterbar">
+  <span class="filter-label">App</span>
+  <div class="filter-chip active" onclick="filterApp(this,'all')"><span class="dot dot-all"></span>All</div>
+  <div class="filter-chip" onclick="filterApp(this,'imsg')"><span class="dot dot-imsg"></span>iMessage</div>
+  <div class="filter-chip" onclick="filterApp(this,'wa')"><span class="dot dot-wa"></span>WhatsApp</div>
+  <div class="filter-chip" onclick="filterApp(this,'snap')"><span class="dot dot-snap"></span>Snapchat</div>
+  <div class="filter-chip" onclick="filterApp(this,'sms')"><span class="dot dot-sms"></span>SMS</div>
+
+  <div class="filter-sep"></div>
+  <span class="filter-label">Device</span>
+  <div class="device-chip active" onclick="filterDevice(this,'all')">
+    <div class="avatar" style="background:#4f8ef7;color:#fff">A</div> All Devices
+  </div>
+  <div class="device-chip" onclick="filterDevice(this,'d1')">
+    <div class="avatar" style="background:#bf5af2;color:#fff">R</div> Ryan · iPhone 15 Pro
+  </div>
+  <div class="device-chip" onclick="filterDevice(this,'d2')">
+    <div class="avatar" style="background:#ff9f0a;color:#fff">M</div> Maya · S24 Ultra
+  </div>
+  <div class="device-chip" onclick="filterDevice(this,'d3')">
+    <div class="avatar" style="background:#25d366;color:#fff">D</div> Dev · iPhone 14
+  </div>
+  <div class="device-chip" onclick="filterDevice(this,'d4')">
+    <div class="avatar" style="background:#ff453a;color:#fff">J</div> Jordan · Pixel 8
+  </div>
+</div>
+
+<!-- ══════════════════════════ MAIN APP ════════════════════════ -->
+<div id="app">
+
+  <!-- ════════════ LEFT: TIMELINE ════════════ -->
+  <div id="timeline-panel">
+    <div class="panel-header">
+      <span class="panel-title">Timeline</span>
+      <span class="panel-count">42 events</span>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="evidence-strip">
+      <div class="ev-stat">
+        <div class="ev-num" style="color:var(--red)">7</div>
+        <div class="ev-lbl">Flagged</div>
+      </div>
+      <div class="ev-stat">
+        <div class="ev-num" style="color:var(--orange)">3</div>
+        <div class="ev-lbl">Deleted</div>
+      </div>
+      <div class="ev-stat">
+        <div class="ev-num" style="color:var(--green)">42</div>
+        <div class="ev-lbl">Total</div>
+      </div>
+      <div class="ev-stat">
+        <div class="ev-num" style="color:var(--accent)">4</div>
+        <div class="ev-lbl">Devices</div>
+      </div>
+    </div>
+
+    <div id="timeline-scroll">
+
+      <!-- ─── June 10 ─── -->
+      <div class="tl-date-group"><div class="tl-date-label">Mon · Jun 10, 2024</div></div>
+
+      <div class="tl-item" onclick="loadConvo('c1')" id="tl-c1">
+        <div class="tl-dot-wrap">
+          <div class="tl-dot" style="background:#1d8cf8"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-header">
+            <span class="tl-name">Ryan → Maya</span>
+            <span class="tl-time">9:14 AM</span>
+          </div>
+          <div class="tl-preview">"Hey, did you talk to him yet?"</div>
+          <div class="tl-tags">
+            <span class="tl-tag tag-imsg">iMessage</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item" onclick="loadConvo('c2')" id="tl-c2">
+        <div class="tl-dot-wrap">
+          <div class="tl-dot" style="background:var(--green)"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-header">
+            <span class="tl-name">Maya → Jordan</span>
+            <span class="tl-time">11:32 AM</span>
+          </div>
+          <div class="tl-preview">"Don't say anything to anyone."</div>
+          <div class="tl-tags">
+            <span class="tl-tag tag-wa">WhatsApp</span>
+            <span class="tl-tag tag-flagged">Flagged</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item" onclick="loadConvo('c3')" id="tl-c3">
+        <div class="tl-dot-wrap">
+          <div class="tl-dot" style="background:#cccc00"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-header">
+            <span class="tl-name">Ryan → Dev</span>
+            <span class="tl-time">2:05 PM</span>
+          </div>
+          <div class="tl-preview">Snap · Opened · [Image — 4s]</div>
+          <div class="tl-tags">
+            <span class="tl-tag tag-snap">Snapchat</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── June 12 ─── -->
+      <div class="tl-date-group"><div class="tl-date-label">Wed · Jun 12, 2024</div></div>
+
+      <div class="tl-item" onclick="loadConvo('c4')" id="tl-c4">
+        <div class="tl-dot-wrap">
+          <div class="tl-dot" style="background:#1d8cf8"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-header">
+            <span class="tl-name">Dev → Ryan</span>
+            <span class="tl-time">8:50 AM</span>
+          </div>
+          <div class="tl-preview">"I saw what happened. We need to talk."</div>
+          <div class="tl-tags">
+            <span class="tl-tag tag-imsg">iMessage</span>
+            <span class="tl-tag tag-evidence">Evidence</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item" onclick="loadConvo('c5')" id="tl-c5">
+        <div class="tl-dot-wrap">
+          <div class="tl-dot" style="background:var(--green)"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-header">
+            <span class="tl-name">Jordan → Maya</span>
+            <span class="tl-time">3:17 PM</span>
+          </div>
+          <div class="tl-preview">"Already deleted everything on my end"</div>
+          <div class="tl-tags">
+            <span class="tl-tag tag-wa">WhatsApp</span>
+            <span class="tl-tag tag-flagged">Flagged</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── INCIDENT MARKER ─── -->
+      <div class="tl-incident-marker">
+        <div class="inc-dot pulse"></div>
+        <span>INCIDENT DATE · Jun 14, 2024</span>
+      </div>
+
+      <!-- ─── June 14 ─── -->
+      <div class="tl-date-group"><div class="tl-date-label">Fri · Jun 14, 2024 · <span style="color:var(--red)">INCIDENT</span></div></div>
+
+      <div class="tl-item active" onclick="loadConvo('c6')" id="tl-c6">
+        <div class="tl-dot-wrap">
+          <div class="tl-dot" style="background:var(--red);box-shadow:0 0 8px var(--red)"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-header">
+            <span class="tl-name">Ryan → Maya</span>
+            <span class="tl-time" style="color:var(--red)">11:47 PM</span>
+          </div>
+          <div class="tl-preview">"It's done. Don't call me."</div>
+          <div class="tl-tags">
+            <span class="tl-tag tag-sms">SMS</span>
+            <span class="tl-tag tag-flagged">Flagged</span>
+            <span class="tl-tag tag-evidence">Evidence</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── June 16 ─── -->
+      <div class="tl-date-group"><div class="tl-date-label">Sun · Jun 16, 2024</div></div>
+
+      <div class="tl-item" onclick="loadConvo('c7')" id="tl-c7">
+        <div class="tl-dot-wrap">
+          <div class="tl-dot" style="background:var(--green)"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-header">
+            <span class="tl-name">Dev → Jordan</span>
+            <span class="tl-time">10:02 AM</span>
+          </div>
+          <div class="tl-preview">"Did you see the news this morning?"</div>
+          <div class="tl-tags">
+            <span class="tl-tag tag-wa">WhatsApp</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item" onclick="loadConvo('c8')" id="tl-c8">
+        <div class="tl-dot-wrap">
+          <div class="tl-dot" style="background:#1d8cf8"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-header">
+            <span class="tl-name">Ryan → Ryan</span>
+            <span class="tl-time">11:59 PM</span>
+          </div>
+          <div class="tl-preview">"Note to self — call lawyer Monday"</div>
+          <div class="tl-tags">
+            <span class="tl-tag tag-imsg">iMessage</span>
+            <span class="tl-tag tag-evidence">Evidence</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── June 20 ─── -->
+      <div class="tl-date-group"><div class="tl-date-label">Thu · Jun 20, 2024</div></div>
+
+      <div class="tl-item" onclick="loadConvo('c9')" id="tl-c9">
+        <div class="tl-dot-wrap">
+          <div class="tl-dot" style="background:#cccc00"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-header">
+            <span class="tl-name">Maya → Jordan</span>
+            <span class="tl-time">4:30 PM</span>
+          </div>
+          <div class="tl-preview">Snap · [Video — Expired]</div>
+          <div class="tl-tags">
+            <span class="tl-tag tag-snap">Snapchat</span>
+            <span class="tl-tag tag-flagged">Flagged</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /timeline-scroll -->
+  </div><!-- /timeline-panel -->
+
+
+  <!-- ════════════ MIDDLE: PHONE ════════════ -->
+  <div id="phone-panel">
+
+    <!-- Conversation header -->
+    <div id="convo-header">
+      <div class="convo-avatars">
+        <div class="convo-avatar" style="background:linear-gradient(135deg,#bf5af2,#7b00d4)">R</div>
+        <div class="convo-avatar" style="background:linear-gradient(135deg,#ff9f0a,#ff6b00)">M</div>
+      </div>
+      <div class="convo-info">
+        <div class="convo-names">Ryan Mercer &amp; Maya Santos</div>
+        <div class="convo-sub">
+          Jun 14, 2024 · 11:47 PM &nbsp;·&nbsp; Ryan's iPhone 15 Pro
+          &nbsp;<span class="same-party-badge">✦ Cross-Device Convo</span>
+        </div>
+      </div>
+      <div class="convo-app-badge badge-sms">📱 SMS</div>
+    </div>
+
+    <!-- iPhone 15 Pro frame -->
+    <div class="phone-wrap" id="phone-device">
+      <div class="iphone-frame">
+        <!-- Side buttons -->
+        <div class="iphone-btn-l" style="top:120px;height:36px"></div>
+        <div class="iphone-btn-l" style="top:168px;height:64px"></div>
+        <div class="iphone-btn-l" style="top:244px;height:64px"></div>
+        <div class="iphone-btn-r" style="top:170px;height:80px"></div>
+
+        <div class="iphone-inner">
+          <!-- Dynamic Island -->
+          <div class="iphone-island"></div>
+
+          <!-- Status bar -->
+          <div class="iphone-statusbar">
+            <span class="sb-time">11:47</span>
+            <div class="sb-icons">
+              <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4l2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+          </div>
+
+          <!-- App header -->
+          <div class="iphone-app-header">
+            <div class="app-header-avatar" style="background:#4a4a4e;color:#fff;font-size:11px">←</div>
+            <div class="app-header-avatar" style="background:linear-gradient(135deg,#ff9f0a,#ff6b00)">M</div>
+            <div class="app-header-info">
+              <div class="app-header-name">Maya</div>
+              <div class="app-header-status">Text Message</div>
+            </div>
+            <div class="app-header-icon" style="background:transparent;color:var(--text-muted);font-size:18px">⋯</div>
+          </div>
+
+          <!-- Chat messages -->
+          <div class="iphone-chat" id="chat-area">
+
+            <div class="chat-date-div"><span>Friday, June 14</span></div>
+
+            <div class="bubble-row in">
+              <div class="bubble-avatar-sm" style="background:linear-gradient(135deg,#ff9f0a,#ff6b00)">M</div>
+              <div class="bubble bubble-sms-in">
+                <p>Are you still there? I've been calling.</p>
+                <div class="bubble-meta">10:22 PM</div>
+              </div>
+            </div>
+
+            <div class="bubble-row in">
+              <div class="bubble-avatar-sm" style="background:linear-gradient(135deg,#ff9f0a,#ff6b00)">M</div>
+              <div class="bubble bubble-sms-in">
+                <p>Ryan, please. I need to know what happened.</p>
+                <div class="bubble-meta">11:15 PM</div>
+              </div>
+            </div>
+
+            <div class="bubble-row out">
+              <div class="bubble bubble-sms-out bubble-flagged">
+                <div class="flag-icon">⚑</div>
+                <p>It's done. Don't call me.</p>
+                <div class="bubble-meta">11:47 PM · Delivered ✓✓</div>
+              </div>
+            </div>
+
+            <div class="bubble-row in">
+              <div class="bubble-avatar-sm" style="background:linear-gradient(135deg,#ff9f0a,#ff6b00)">M</div>
+              <div class="bubble bubble-sms-in">
+                <p>What does that mean??? Ryan??</p>
+                <div class="bubble-meta">11:49 PM</div>
+              </div>
+            </div>
+
+            <div class="chat-date-div"><span>Saturday, June 15</span></div>
+
+            <div class="bubble-row out">
+              <div class="bubble bubble-sms-out">
+                <p>Stop texting. I'll explain later.</p>
+                <div class="bubble-meta">8:03 AM · Read</div>
+              </div>
+            </div>
+
+          </div><!-- /chat -->
+
+          <!-- Input bar (decorative) -->
+          <div class="iphone-input">
+            <div class="iphone-input-box">iMessage</div>
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1d8cf8,#0af);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">↑</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /phone-wrap -->
+
+    <div class="watermark">Case 2024-DF-00412 · Confidential</div>
+  </div><!-- /phone-panel -->
+
+
+  <!-- ════════════ RIGHT: METADATA ════════════ -->
+  <div id="meta-panel">
+    <div class="panel-header">
+      <span class="panel-title">Reference &amp; Metadata</span>
+    </div>
+
+    <div class="evidence-strip">
+      <div class="ev-stat">
+        <div class="ev-num" style="color:var(--red);font-size:14px">HIGH</div>
+        <div class="ev-lbl">Priority</div>
+      </div>
+      <div class="ev-stat">
+        <div class="ev-num" style="color:var(--orange);font-size:14px">FLAGGED</div>
+        <div class="ev-lbl">Status</div>
+      </div>
+      <div class="ev-stat">
+        <div class="ev-num" style="color:var(--green);font-size:14px">INTACT</div>
+        <div class="ev-lbl">Integrity</div>
+      </div>
+    </div>
+
+    <div id="meta-scroll">
+
+      <!-- Participants -->
+      <div class="meta-section">
+        <div class="meta-section-title">Participants</div>
+
+        <div class="participant-card">
+          <div class="p-avatar" style="background:linear-gradient(135deg,#bf5af2,#7b00d4)">R</div>
+          <div class="p-info">
+            <div class="p-name">Ryan Mercer</div>
+            <div class="p-device">iPhone 15 Pro · +1 (555) 204-1987</div>
+          </div>
+          <span class="p-role role-suspect">Suspect</span>
+        </div>
+
+        <div class="participant-card">
+          <div class="p-avatar" style="background:linear-gradient(135deg,#ff9f0a,#ff6b00)">M</div>
+          <div class="p-info">
+            <div class="p-name">Maya Santos</div>
+            <div class="p-device">Samsung Galaxy S24 Ultra · +1 (555) 318-4422</div>
+          </div>
+          <span class="p-role role-witness">Witness</span>
+        </div>
+
+      </div>
+
+      <!-- Message metadata -->
+      <div class="meta-section">
+        <div class="meta-section-title">Message Metadata</div>
+        <div class="meta-row"><span class="meta-key">Timestamp</span><span class="meta-val mono">2024-06-14 23:47:12 UTC</span></div>
+        <div class="meta-row"><span class="meta-key">Local Time</span><span class="meta-val">11:47 PM EST</span></div>
+        <div class="meta-row"><span class="meta-key">Platform</span><span class="meta-val">SMS / Carrier</span></div>
+        <div class="meta-row"><span class="meta-key">Direction</span><span class="meta-val badge-red">Outbound (Sent)</span></div>
+        <div class="meta-row"><span class="meta-key">Read Status</span><span class="meta-val badge-green">Read · 11:48 PM</span></div>
+        <div class="meta-row"><span class="meta-key">Deleted</span><span class="meta-val badge-orange">Recovered · Deleted by sender</span></div>
+        <div class="meta-row"><span class="meta-key">Thread ID</span><span class="meta-val mono">#THR-00041-SMS</span></div>
+        <div class="meta-row"><span class="meta-key">Message ID</span><span class="meta-val mono">MSG-4F2A9C-7B1</span></div>
+      </div>
+
+      <!-- Device info -->
+      <div class="meta-section">
+        <div class="meta-section-title">Device Information</div>
+        <div class="meta-row"><span class="meta-key">Model</span><span class="meta-val">Apple iPhone 15 Pro</span></div>
+        <div class="meta-row"><span class="meta-key">IMEI</span><span class="meta-val mono">35-209900-176148-1</span></div>
+        <div class="meta-row"><span class="meta-key">iOS Version</span><span class="meta-val">17.4.1</span></div>
+        <div class="meta-row"><span class="meta-key">Serial No.</span><span class="meta-val mono">C39VH1XMFK2P</span></div>
+        <div class="meta-row"><span class="meta-key">Extracted via</span><span class="meta-val">Magnet AXIOM 7.4</span></div>
+        <div class="meta-row"><span class="meta-key">Extraction</span><span class="meta-val badge-green">Full File System</span></div>
+      </div>
+
+      <!-- Hash verification -->
+      <div class="meta-section">
+        <div class="meta-section-title">Hash Verification</div>
+        <div class="hash-block">
+          <div class="hash-label">MD5</div>
+          <div class="hash-val">a3f5d2e1b4c7890f23e6a1d4b7c0e9f2</div>
+        </div>
+        <div class="hash-block">
+          <div class="hash-label">SHA-256</div>
+          <div class="hash-val">2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824</div>
+        </div>
+        <div class="meta-row"><span class="meta-key">Verified</span><span class="meta-val badge-green">✓ Hash Match</span></div>
+      </div>
+
+      <!-- Evidence confidence -->
+      <div class="meta-section">
+        <div class="meta-section-title">Evidence Confidence</div>
+        <div class="conf-bar-wrap">
+          <div class="conf-bar-label"><span>Authenticity</span><span style="color:var(--green)">96%</span></div>
+          <div class="conf-bar-bg"><div class="conf-bar-fill" style="width:96%;background:var(--green)"></div></div>
+        </div>
+        <div class="conf-bar-wrap" style="margin-top:10px">
+          <div class="conf-bar-label"><span>Completeness</span><span style="color:var(--orange)">78%</span></div>
+          <div class="conf-bar-bg"><div class="conf-bar-fill" style="width:78%;background:var(--orange)"></div></div>
+        </div>
+        <div class="conf-bar-wrap" style="margin-top:10px">
+          <div class="conf-bar-label"><span>Chain of Custody</span><span style="color:var(--accent)">100%</span></div>
+          <div class="conf-bar-bg"><div class="conf-bar-fill" style="width:100%;background:var(--accent)"></div></div>
+        </div>
+      </div>
+
+      <!-- Chain of custody -->
+      <div class="meta-section">
+        <div class="meta-section-title">Chain of Custody</div>
+
+        <div class="coc-item">
+          <div class="coc-icon" style="background:rgba(79,142,247,0.15)">🔒</div>
+          <div class="coc-text">
+            <div class="coc-action">Device Seized</div>
+            <div class="coc-detail">Det. J. Harris · Case# 2024-DF-00412</div>
+            <div class="coc-ts">2024-06-15 09:12:44 UTC</div>
+          </div>
+        </div>
+
+        <div class="coc-item">
+          <div class="coc-icon" style="background:rgba(37,211,102,0.12)">📦</div>
+          <div class="coc-text">
+            <div class="coc-action">Forensic Image Created</div>
+            <div class="coc-detail">Magnet AXIOM · Full FS · Lab Unit 3</div>
+            <div class="coc-ts">2024-06-15 14:30:07 UTC</div>
+          </div>
+        </div>
+
+        <div class="coc-item">
+          <div class="coc-icon" style="background:rgba(255,159,10,0.12)">🔍</div>
+          <div class="coc-text">
+            <div class="coc-action">Analysis Completed</div>
+            <div class="coc-detail">Examiner: A. Chen · Reviewed: Det. Harris</div>
+            <div class="coc-ts">2024-06-18 11:00:00 UTC</div>
+          </div>
+        </div>
+
+        <div class="coc-item">
+          <div class="coc-icon" style="background:rgba(191,90,242,0.12)">📋</div>
+          <div class="coc-text">
+            <div class="coc-action">Report Generated</div>
+            <div class="coc-detail">Attorney Review Package</div>
+            <div class="coc-ts">2024-06-24 08:00:00 UTC</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Actions -->
+      <div class="meta-section">
+        <div class="meta-section-title">Actions</div>
+        <div class="meta-action-row">
+          <div class="meta-btn primary" onclick="exportEvidence()">⬇ Export</div>
+          <div class="meta-btn danger" onclick="flagMessage()">⚑ Flag</div>
+        </div>
+        <div class="meta-action-row">
+          <div class="meta-btn" onclick="addAnnotation()">✎ Annotate</div>
+          <div class="meta-btn" onclick="printRecord()">🖨 Print</div>
+        </div>
+      </div>
+
+    </div><!-- /meta-scroll -->
+  </div><!-- /meta-panel -->
+
+</div><!-- /app -->
+
+<!-- Scroll-to-incident floating button -->
+<button id="incident-btn" onclick="scrollToIncident()">
+  ⚠ Jump to Incident
+</button>
+
+<script>
+  // ── Sample conversation data ─────────────────────────────
+  const conversations = {
+    c1: {
+      participants: ['Ryan Mercer', 'Maya Santos'],
+      avatars: [
+        {letter:'R', bg:'linear-gradient(135deg,#bf5af2,#7b00d4)'},
+        {letter:'M', bg:'linear-gradient(135deg,#ff9f0a,#ff6b00)'}
+      ],
+      date: 'Jun 10, 2024 · 9:14 AM',
+      device: "Ryan's iPhone 15 Pro",
+      app: 'imsg', appLabel: 'iMessage',
+      sameParty: false,
+      phoneType: 'iphone',
+      messages: [
+        {dir:'out', text:"Hey, did you talk to him yet?", time:'9:14 AM', status:'Delivered'},
+        {dir:'in',  text:"Not yet. Why?", time:'9:16 AM'},
+        {dir:'out', text:"We need to get our stories straight.", time:'9:17 AM', status:'Read', flagged:true},
+        {dir:'in',  text:"What are you saying... I'm scared.", time:'9:20 AM'},
+        {dir:'out', text:"Just trust me. Say nothing.", time:'9:21 AM', status:'Read'},
+      ]
+    },
+    c2: {
+      participants: ['Maya Santos', 'Jordan Kim'],
+      avatars: [
+        {letter:'M', bg:'linear-gradient(135deg,#ff9f0a,#ff6b00)'},
+        {letter:'J', bg:'linear-gradient(135deg,#ff453a,#c0392b)'}
+      ],
+      date: 'Jun 10, 2024 · 11:32 AM',
+      device: "Maya's Samsung Galaxy S24 Ultra",
+      app: 'wa', appLabel: 'WhatsApp',
+      sameParty: false,
+      phoneType: 'samsung',
+      messages: [
+        {dir:'out', text:"Jordan, are you there?", time:'11:32 AM', status:'✓✓'},
+        {dir:'in',  text:"Yeah what's up", time:'11:33 AM'},
+        {dir:'out', text:"Don't say anything to anyone.", time:'11:34 AM', flagged:true, status:'✓✓'},
+        {dir:'in',  text:"About what?", time:'11:35 AM'},
+        {dir:'out', text:"You know what. Ryan told me you saw.", time:'11:36 AM', status:'✓✓'},
+        {dir:'in',  text:"I don't know what you're talking about 🤷", time:'11:38 AM'},
+      ]
+    },
+    c6: {
+      participants: ['Ryan Mercer', 'Maya Santos'],
+      avatars: [
+        {letter:'R', bg:'linear-gradient(135deg,#bf5af2,#7b00d4)'},
+        {letter:'M', bg:'linear-gradient(135deg,#ff9f0a,#ff6b00)'}
+      ],
+      date: 'Jun 14, 2024 · 11:47 PM',
+      device: "Ryan's iPhone 15 Pro",
+      app: 'sms', appLabel: 'SMS',
+      sameParty: false,
+      phoneType: 'iphone',
+      messages: [
+        {dir:'in',  text:"Are you still there? I've been calling.", time:'10:22 PM'},
+        {dir:'in',  text:"Ryan, please. I need to know what happened.", time:'11:15 PM'},
+        {dir:'out', text:"It's done. Don't call me.", time:'11:47 PM', status:'Delivered ✓✓', flagged:true, deleted:true},
+        {dir:'in',  text:"What does that mean??? Ryan??", time:'11:49 PM'},
+        {dir:'out', text:"Stop texting. I'll explain later.", time:'8:03 AM', status:'Read'},
+      ]
+    },
+    c8: {
+      participants: ['Ryan Mercer'],
+      avatars: [
+        {letter:'R', bg:'linear-gradient(135deg,#bf5af2,#7b00d4)'},
+      ],
+      date: 'Jun 16, 2024 · 11:59 PM',
+      device: "Ryan's iPhone 15 Pro",
+      app: 'imsg', appLabel: 'iMessage',
+      sameParty: true,
+      phoneType: 'iphone',
+      messages: [
+        {dir:'out', text:"Note to self — call lawyer Monday first thing", time:'11:59 PM', status:'Delivered', flagged:true},
+        {dir:'out', text:"Also need to figure out what to do about Dev", time:'11:59 PM', status:'Delivered'},
+      ]
+    }
+  };
+
+  const appStyles = {
+    imsg: { out:'bubble-imsg-out', in:'bubble-imsg-in', badge:'badge-imsg', icon:'app-icon-imsg', emoji:'💬', label:'iMessage' },
+    wa:   { out:'bubble-wa-out',   in:'bubble-wa-in',   badge:'badge-wa',   icon:'app-icon-wa',   emoji:'', label:'WhatsApp' },
+    snap: { out:'bubble-snap-out', in:'bubble-snap-in', badge:'badge-snap', icon:'app-icon-snap',  emoji:'👻', label:'Snapchat' },
+    sms:  { out:'bubble-sms-out',  in:'bubble-sms-in',  badge:'badge-sms',  icon:'',              emoji:'📱', label:'SMS' },
+  };
+
+  function loadConvo(id) {
+    const c = conversations[id];
+    if (!c) return;
+
+    // Mark timeline active
+    document.querySelectorAll('.tl-item').forEach(el => el.classList.remove('active'));
+    const tlEl = document.getElementById('tl-' + id);
+    if (tlEl) tlEl.classList.add('active');
+
+    const style = appStyles[c.app];
+
+    // Update convo header
+    const avHtml = c.avatars.map((a,i) =>
+      `<div class="convo-avatar" style="background:${a.bg};${i>0?'margin-left:-12px':''}">${a.letter}</div>`
+    ).join('');
+
+    const samePartyBadge = c.sameParty
+      ? ' &nbsp;<span class="same-party-badge">✦ Self Conversation</span>'
+      : (c.participants.length === 2 ? ' &nbsp;<span class="same-party-badge">✦ Cross-Device Convo</span>' : '');
+
+    document.getElementById('convo-header').innerHTML = `
+      <div class="convo-avatars">${avHtml}</div>
+      <div class="convo-info">
+        <div class="convo-names">${c.participants.join(' &amp; ')}</div>
+        <div class="convo-sub">${c.date} &nbsp;·&nbsp; ${c.device}${samePartyBadge}</div>
+      </div>
+      <div class="convo-app-badge ${style.badge}">${style.emoji} ${style.label}</div>
+    `;
+
+    // Build chat messages
+    const chatArea = document.getElementById('chat-area');
+    let html = `<div class="chat-date-div"><span>${c.date.split('·')[0].trim()}</span></div>`;
+
+    c.messages.forEach(msg => {
+      const bubbleCls = msg.dir === 'out' ? style.out : style.in;
+      const flagHtml  = msg.flagged ? '<div class="flag-icon">⚑</div>' : '';
+      const flagCls   = msg.flagged ? ' bubble-flagged' : '';
+      const delHtml   = msg.deleted ? '<div style="font-size:9px;color:var(--red);margin-top:2px;">⚠ Recovered from deleted</div>' : '';
+      const statusHtml = msg.status ? `<div class="bubble-meta">${msg.time} · ${msg.status}</div>` : `<div class="bubble-meta">${msg.time}</div>`;
+
+      if (msg.dir === 'out') {
+        html += `<div class="bubble-row out">
+          <div class="bubble ${bubbleCls}${flagCls}">${flagHtml}<p>${msg.text}</p>${delHtml}${statusHtml}</div>
+        </div>`;
+      } else {
+        const av = c.avatars[c.participants.length > 1 ? 1 : 0];
+        html += `<div class="bubble-row in">
+          <div class="bubble-avatar-sm" style="background:${av.bg}">${av.letter}</div>
+          <div class="bubble ${bubbleCls}${flagCls}">${flagHtml}<p>${msg.text}</p>${statusHtml}</div>
+        </div>`;
+      }
+    });
+
+    chatArea.innerHTML = html;
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+    // Swap phone frame for Samsung if needed
+    const phoneWrap = document.getElementById('phone-device');
+    if (c.phoneType === 'samsung') {
+      buildSamsungFrame(phoneWrap, c, style);
+    } else {
+      buildIphoneFrame(phoneWrap, c, style);
+    }
+  }
+
+  function buildIphoneFrame(wrap, c, style) {
+    const avatarBg = c.avatars[c.participants.length > 1 ? 1 : 0].bg;
+    const avatarLetter = c.avatars[c.participants.length > 1 ? 1 : 0].letter;
+    const recipientName = c.participants.length > 1 ? c.participants[1] : c.participants[0];
+
+    wrap.innerHTML = `
+    <div class="iphone-frame">
+      <div class="iphone-btn-l" style="top:120px;height:36px"></div>
+      <div class="iphone-btn-l" style="top:168px;height:64px"></div>
+      <div class="iphone-btn-l" style="top:244px;height:64px"></div>
+      <div class="iphone-btn-r" style="top:170px;height:80px"></div>
+      <div class="iphone-inner">
+        <div class="iphone-island"></div>
+        <div class="iphone-statusbar">
+          <span class="sb-time">${c.date.split('·')[1] ? c.date.split('·')[1].trim().split(',')[0] : '9:41'}</span>
+          <div class="sb-icons">
+            <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4l2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+          </div>
+        </div>
+        <div class="iphone-app-header">
+          <div class="app-header-avatar" style="background:#4a4a4e;color:#fff;font-size:11px">←</div>
+          <div class="app-header-avatar" style="background:${avatarBg}">${avatarLetter}</div>
+          <div class="app-header-info">
+            <div class="app-header-name">${recipientName.split(' ')[0]}</div>
+            <div class="app-header-status">${style.label}</div>
+          </div>
+          <div style="background:transparent;color:var(--text-muted);font-size:18px;padding:4px">⋯</div>
+        </div>
+        <div class="iphone-chat" id="chat-area"></div>
+        <div class="iphone-input">
+          <div class="iphone-input-box">${style.label}</div>
+          <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1d8cf8,#0af);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">↑</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function buildSamsungFrame(wrap, c, style) {
+    const avatarBg = c.avatars[c.participants.length > 1 ? 1 : 0].bg;
+    const avatarLetter = c.avatars[c.participants.length > 1 ? 1 : 0].letter;
+    const recipientName = c.participants.length > 1 ? c.participants[1] : c.participants[0];
+
+    wrap.innerHTML = `
+    <div class="samsung-frame">
+      <div class="samsung-inner">
+        <div class="samsung-punch"></div>
+        <div class="samsung-statusbar">
+          <span style="font-size:13px;font-weight:700;color:var(--text)">${c.date.split(' ')[1] || '10:00'}</span>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text)">▲▲▲ 🔋</div>
+        </div>
+        <div class="iphone-app-header" style="background:${style.badge === 'badge-wa' ? '#075e54' : 'var(--surface2)'}">
+          <div style="font-size:18px;color:var(--text-muted)">←</div>
+          <div class="app-header-avatar" style="background:${avatarBg}">${avatarLetter}</div>
+          <div class="app-header-info">
+            <div class="app-header-name">${recipientName.split(' ')[0]}</div>
+            <div class="app-header-status" style="color:rgba(255,255,255,0.6)">online</div>
+          </div>
+          <div style="color:rgba(255,255,255,0.7);font-size:18px">⋮</div>
+        </div>
+        <div class="iphone-chat" id="chat-area" style="background:${style.badge === 'badge-wa' ? '#0b141a' : 'var(--bg)'}"></div>
+        <div class="iphone-input" style="background:${style.badge === 'badge-wa' ? '#1f2c34' : 'var(--surface2)'}">
+          <div class="iphone-input-box">Message</div>
+          <div style="width:30px;height:30px;border-radius:50%;background:${style.badge === 'badge-wa' ? 'var(--green)' : 'var(--accent)'};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🎤</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Re-populate chat after phone rebuild
+  const _origLoadConvo = loadConvo;
+
+  function filterApp(el, app) {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function filterDevice(el, device) {
+    document.querySelectorAll('.device-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function scrollToIncident() {
+    const marker = document.querySelector('.tl-incident-marker');
+    if (marker) marker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    loadConvo('c6');
+  }
+
+  function exportEvidence() {
+    alert('Evidence export package would be generated here.\n\nFormats: PDF Report · CSV Log · JSON Archive');
+  }
+
+  function flagMessage() {
+    alert('Message flagged for attorney review.');
+  }
+
+  function addAnnotation() {
+    const note = prompt('Add annotation for this evidence item:');
+    if (note) alert('Annotation saved:\n"' + note + '"');
+  }
+
+  function printRecord() {
+    window.print();
+  }
+
+  // Load default conversation on start
+  loadConvo('c6');
+</script>
+
+</body>
+</html>
