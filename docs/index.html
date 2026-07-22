@@ -267,6 +267,34 @@
   .empty svg{width:44px;height:44px;opacity:.4;margin-bottom:12px;}
   .empty p{font-size:14px;}
 
+  /* ── Job finder ─────────────────────────────────────────────────── */
+  .freshbar{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0;}
+  .freshchip{border:1px solid var(--border-strong);background:var(--surface2);color:var(--text-muted);
+    padding:7px 14px;border-radius:20px;font-size:12.5px;font-weight:600;font-family:var(--font-mono);
+    transition:background .12s,color .12s,border-color .12s;}
+  .freshchip:hover{color:var(--text);border-color:var(--accent);}
+  .freshchip.active{background:var(--accent);color:#fff;border-color:transparent;}
+  .jobcard{border:1px solid var(--border);border-radius:var(--radius-sm);padding:15px 16px;
+    background:var(--surface);box-shadow:var(--shadow);}
+  .jobcard + .jobcard{margin-top:10px;}
+  .jobcard .jc-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
+  .jobcard h3{font-size:14.5px;font-weight:650;letter-spacing:-.01em;}
+  .jobcard .jc-co{color:var(--text-muted);font-size:12.5px;margin-top:2px;}
+  .jobcard .jc-age{font-family:var(--font-mono);font-size:11.5px;color:var(--good);white-space:nowrap;
+    background:var(--good-bg);padding:3px 9px;border-radius:20px;font-weight:600;}
+  .jobcard .jc-src{font-family:var(--font-mono);font-size:10.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;}
+  .jobcard .jc-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;}
+  .jobcard .jc-tag{font-size:11px;background:var(--surface3);color:var(--text-dim);border-radius:4px;padding:2px 8px;}
+  .jobcard .jc-acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .boardlinks{display:flex;flex-wrap:wrap;gap:9px;margin-top:4px;}
+  .boardlink{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border-strong);
+    background:var(--surface2);color:var(--text);border-radius:var(--radius-sm);padding:9px 14px;
+    font-size:13px;font-weight:600;}
+  .boardlink:hover{text-decoration:none;border-color:var(--accent);color:var(--accent-ink);}
+  .boardlink small{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);font-weight:500;}
+  .resultmeta{display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px;flex-wrap:wrap;gap:8px;}
+  .resultmeta .rc{font-family:var(--font-mono);font-size:12px;color:var(--text-muted);}
+
   /* ── Toast & banner ─────────────────────────────────────────────── */
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
     background:var(--text);color:var(--bg);padding:11px 20px;border-radius:10px;
@@ -300,6 +328,10 @@
       <button data-view="resume" class="active">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z" opacity=".0"/><path d="M7 8h10M7 12h10M7 16h6" stroke-linecap="round"/><rect x="4" y="3.5" width="16" height="17" rx="2"/></svg>
         My Resume
+      </button>
+      <button data-view="finder">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+        Find Jobs
       </button>
       <button data-view="tailor">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M3 12h3M18 12h3M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/></svg>
@@ -392,10 +424,51 @@
       </div>
     </section>
 
+    <!-- ═══ VIEW: FIND JOBS ════════════════════════════════════════ -->
+    <section class="view" id="view-finder">
+      <div class="page-h">
+        <div class="eyebrow">Step 2</div>
+        <h1>Find jobs</h1>
+        <p>Search fresh postings and filter by how recently they were posted. Pick one and it drops
+           straight into <b>Tailor &amp; Apply</b>.</p>
+      </div>
+
+      <div class="card">
+        <h2>Search</h2>
+        <div class="row">
+          <div class="field"><label class="fl">Keywords</label><input type="text" id="f_kw" placeholder="python backend engineer"></div>
+          <div class="field"><label class="fl">Location / remote (optional)</label><input type="text" id="f_loc" placeholder="remote, berlin, new york…"></div>
+        </div>
+        <label class="fl">Posted within</label>
+        <div class="freshbar" id="freshbar"></div>
+        <div class="btn-row" style="margin-top:16px;">
+          <button class="btn" id="findBtn" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+            Search jobs
+          </button>
+          <span id="findStatus" class="hint"></span>
+        </div>
+        <div class="note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+          <span>Live results come from public job APIs and may be blocked on some hosts (including the private
+          share link). The board links below always work — they open each site pre-filtered to your exact time
+          window in a new tab, so you can browse or copy a job description and paste it into Tailor.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Open job boards — filtered to your window</h2>
+        <div class="sub">LinkedIn honors the exact window (6h, 12h…); Indeed &amp; Google round to days.</div>
+        <div class="boardlinks" id="boardLinks"></div>
+      </div>
+
+      <div id="findResults"></div>
+    </section>
+
     <!-- ═══ VIEW: TAILOR ═══════════════════════════════════════════ -->
     <section class="view" id="view-tailor">
       <div class="page-h">
-        <div class="eyebrow">Step 2</div>
+        <div class="eyebrow">Step 3</div>
         <h1>Tailor &amp; apply</h1>
         <p>Paste a job description. The tool tailors your resume to it, scores the ATS match,
            and hands you a ready-to-submit package: PDF named after the job, cover letter, and screening answers.</p>
@@ -489,7 +562,7 @@
     <!-- ═══ VIEW: PIPELINE ═════════════════════════════════════════ -->
     <section class="view" id="view-pipeline">
       <div class="page-h">
-        <div class="eyebrow">Step 3</div>
+        <div class="eyebrow">Step 4</div>
         <h1>Application pipeline</h1>
         <p>Every job you've tailored, tracked on this device. Update statuses as you go —
            nothing is lost between sessions.</p>
@@ -795,6 +868,7 @@ function setView(v){
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
   document.querySelectorAll(".view").forEach(s=>s.classList.toggle("active",s.id==="view-"+v));
   if(v==="tailor") checkResumeBanner();
+  if(v==="finder"){ renderFresh(); renderBoardLinks(); }
   if(v==="pipeline") renderPipeline();
   window.scrollTo(0,0);
 }
@@ -1006,8 +1080,135 @@ function renderPipeline(){
   }));
 }
 
+/* ── Job finder ────────────────────────────────────────────────────── */
+const FRESH=[{l:"6h",s:21600},{l:"12h",s:43200},{l:"1 day",s:86400},{l:"2 days",s:172800},{l:"3 days",s:259200},{l:"4 days",s:345600},{l:"5 days",s:432000},{l:"7 days",s:604800},{l:"Any",s:null}];
+let freshSel=86400;
+
+function renderFresh(){
+  const bar=$("freshbar"); bar.innerHTML="";
+  FRESH.forEach(f=>{ const b=document.createElement("button"); b.type="button";
+    b.className="freshchip"+(f.s===freshSel?" active":""); b.textContent=f.l;
+    b.addEventListener("click",()=>{ freshSel=f.s; renderFresh(); renderBoardLinks(); });
+    bar.appendChild(b); });
+}
+function timeAgo(sec){
+  if(!sec) return "";
+  const d=Math.floor(Date.now()/1000)-sec;
+  if(d<0) return "just now";
+  if(d<3600) return Math.max(1,Math.floor(d/60))+"m ago";
+  if(d<86400) return Math.floor(d/3600)+"h ago";
+  return Math.floor(d/86400)+"d ago";
+}
+function htmlToText(html){
+  const d=document.createElement("div"); d.innerHTML=(html||"").replace(/<(script|style)[\s\S]*?<\/\1>/gi,"");
+  return (d.textContent||"").replace(/\n{3,}/g,"\n\n").replace(/[ \t]{2,}/g," ").trim();
+}
+function currentFreshLabel(){ const f=FRESH.find(x=>x.s===freshSel); return f?f.l:"Any"; }
+
+function renderBoardLinks(){
+  const kw=($("f_kw").value||"").trim();
+  const enc=encodeURIComponent(kw||"jobs");
+  const sec=freshSel;
+  const days=sec?Math.max(1,Math.ceil(sec/86400)):null;
+  const gchip=sec?(sec<=86400?"today":days<=3?"3days":days<=7?"week":"month"):null;
+  const links=[
+    {name:"LinkedIn", exact:true, url:`https://www.linkedin.com/jobs/search/?keywords=${enc}`+(sec?`&f_TPR=r${sec}`:""), note:"exact window"},
+    {name:"Indeed", exact:false, url:`https://www.indeed.com/jobs?q=${enc}`+(days?`&fromage=${days}`:""), note:days?`last ${days}d`:"any"},
+    {name:"Google Jobs", exact:false, url:`https://www.google.com/search?q=${enc}+jobs&ibp=htl;jobs`+(gchip?`&htichips=date_posted:${gchip}`:""), note:gchip||"any"},
+    {name:"Remotive", exact:false, url:`https://remotive.com/remote-jobs?search=${enc}`, note:"remote"},
+    {name:"WeWorkRemotely", exact:false, url:`https://weworkremotely.com/remote-jobs/search?term=${enc}`, note:"remote"},
+  ];
+  $("boardLinks").innerHTML=links.map(l=>
+    `<a class="boardlink" href="${l.url}" target="_blank" rel="noopener">${l.name} <small>${l.note}</small></a>`).join("");
+}
+
+async function fetchWithTimeout(url, ms){
+  const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),ms||12000);
+  try{ const r=await fetch(url,{signal:ctrl.signal,headers:{"Accept":"application/json"}}); return await r.json(); }
+  finally{ clearTimeout(t); }
+}
+async function fetchRemotive(kw){
+  const j=await fetchWithTimeout("https://remotive.com/api/remote-jobs?limit=60"+(kw?"&search="+encodeURIComponent(kw):""));
+  return (j.jobs||[]).map(x=>({title:x.title,company:x.company_name,location:x.candidate_required_location||"Remote",
+    url:x.url,description:htmlToText(x.description||""),
+    created:Math.floor(new Date(x.publication_date).getTime()/1000)||0,
+    tags:x.tags||[],source:"remotive"}));
+}
+async function fetchArbeitnow(){
+  const j=await fetchWithTimeout("https://www.arbeitnow.com/api/job-board-api");
+  return (j.data||[]).map(x=>({title:x.title,company:x.company_name,location:x.location||(x.remote?"Remote":""),
+    url:x.url,description:htmlToText(x.description||""),created:x.created_at||0,
+    tags:(x.tags||[]).concat(x.job_types||[]),source:"arbeitnow"}));
+}
+
+async function searchJobs(){
+  const kw=($("f_kw").value||"").trim().toLowerCase();
+  const loc=($("f_loc").value||"").trim().toLowerCase();
+  const words=kw.split(/\s+/).filter(Boolean);
+  $("findStatus").textContent="Searching public job boards…";
+  $("findResults").innerHTML="";
+  let jobs=[]; const blocked=[];
+  const sources=[["Remotive",()=>fetchRemotive(($("f_kw").value||"").trim())],["Arbeitnow",fetchArbeitnow]];
+  for(const [name,fn] of sources){
+    try{ jobs=jobs.concat(await fn()); }catch(e){ blocked.push(name); }
+  }
+  const now=Math.floor(Date.now()/1000);
+  let out=jobs.filter(j=>{
+    if(freshSel && j.created && (now-j.created)>freshSel) return false;
+    const blob=(j.title+" "+j.company+" "+(j.tags||[]).join(" ")+" "+j.description).toLowerCase();
+    if(words.length && !words.some(w=>blob.includes(w))) return false;
+    if(loc && !(String(j.location||"").toLowerCase().includes(loc) || blob.includes(loc))) return false;
+    return true;
+  });
+  // de-dupe by url/title+company, newest first
+  const seen=new Set(); out=out.filter(j=>{ const k=(j.url||j.title+"|"+j.company).toLowerCase(); if(seen.has(k))return false; seen.add(k); return true; });
+  out.sort((a,b)=>(b.created||0)-(a.created||0));
+  renderJobResults(out.slice(0,50), blocked, jobs.length);
+}
+
+function renderJobResults(list, blocked, rawCount){
+  const box=$("findResults");
+  $("findStatus").textContent="";
+  let head=`<div class="resultmeta"><div class="rc">${list.length} job${list.length===1?"":"s"} posted within ${currentFreshLabel()}</div></div>`;
+  if(!list.length){
+    let msg = blocked.length && !rawCount
+      ? `Live search couldn't reach the job APIs from here (this often happens on the private share link, which blocks outbound network). Use the <b>board links</b> above — they open filtered results in a new tab.`
+      : `No postings matched within ${currentFreshLabel()}. Try a wider window or different keywords — or use the board links above.`;
+    box.innerHTML=head+`<div class="card"><div class="empty" style="padding:34px 16px;"><p>${msg}</p></div></div>`;
+    return;
+  }
+  const cards=list.map((j,i)=>{
+    const tags=(j.tags||[]).filter(Boolean).slice(0,5).map(t=>`<span class="jc-tag">${esc(String(t))}</span>`).join("");
+    return `<div class="jobcard">
+      <div class="jc-top">
+        <div><h3>${esc(j.title||"—")}</h3><div class="jc-co">${esc(j.company||"")}${j.location?" · "+esc(j.location):""}</div></div>
+        <div style="text-align:right;display:flex;flex-direction:column;gap:5px;align-items:flex-end;">
+          ${j.created?`<span class="jc-age">${timeAgo(j.created)}</span>`:""}
+          <span class="jc-src">${esc(j.source||"")}</span>
+        </div>
+      </div>
+      ${tags?`<div class="jc-tags">${tags}</div>`:""}
+      <div class="jc-acts">
+        <button class="btn sm" data-tailor="${i}" type="button">Tailor this →</button>
+        ${j.url?`<a class="btn sec sm" href="${esc(j.url)}" target="_blank" rel="noopener">Open ↗</a>`:""}
+      </div></div>`;
+  }).join("");
+  box.innerHTML=head+cards;
+  box.querySelectorAll("[data-tailor]").forEach(b=>b.addEventListener("click",()=>tailorFromJob(list[+b.dataset.tailor])));
+}
+function tailorFromJob(j){
+  $("j_company").value=j.company||""; $("j_title").value=j.title||"";
+  $("j_url").value=j.url||""; $("j_desc").value=j.description||"";
+  setView("tailor");
+  toast("Loaded into Tailor — now click “Tailor & score”");
+}
+$("findBtn").addEventListener("click",searchJobs);
+$("f_kw").addEventListener("input",renderBoardLinks);
+$("f_kw").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); searchJobs(); }});
+
 /* -- init -- */
 if(master) fillForm(master); else fillForm({name:"",title:"",email:"",phone:"",location:"",links:[],summary:"",skills:[],experience:[],education:[],certifications:[],projects:[]});
+renderFresh(); renderBoardLinks();
 updatePipeCount(); checkResumeBanner();
 </script>
 </body>
