@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jobapplier"
+version = "0.1.0"
+description = "Persistent job-application assistant: search jobs, tailor an ATS-optimized resume to each JD, export a PDF named after the job, and track every application."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "jobapplier" }]
+dependencies = [
+  # Core is intentionally dependency-free (pure stdlib): PDF writer, tracker,
+  # ATS engine and deterministic tailoring all work with no third-party packages.
+]
+
+[project.optional-dependencies]
+# Enable higher-quality LLM tailoring. Falls back to deterministic if absent.
+llm = ["anthropic>=0.39"]
+# Some search providers parse HTML more robustly with these; optional.
+search = []
+dev = ["pytest>=7"]
+
+[project.scripts]
+jobapplier = "jobapplier.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["jobapplier*"]
+
+[tool.setuptools.package-data]
+jobapplier = ["data/*"]

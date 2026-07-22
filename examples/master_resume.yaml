@@ -1,0 +1,71 @@
+# Master resume — the single source of truth jobapplier tailors from.
+# Keep this truthful and complete; tailoring only reorders/surfaces what's here.
+name: "Jordan A. Rivera"
+title: "Senior Software Engineer"
+email: "jordan.rivera@example.com"
+phone: "+1 (555) 013-2049"
+location: "Austin, TX (open to remote)"
+links:
+  - "linkedin.com/in/jordanrivera"
+  - "github.com/jrivera"
+
+summary: >
+  Backend-focused software engineer with 8 years building scalable services and
+  data platforms. I ship reliable APIs, mentor engineers, and care about clean,
+  well-tested code.
+
+skills:
+  - Python
+  - Go
+  - JavaScript
+  - PostgreSQL
+  - Redis
+  - Docker
+  - Kubernetes
+  - AWS
+  - Terraform
+  - CI/CD
+  - REST APIs
+  - GraphQL
+  - Kafka
+  - Microservices
+  - System Design
+  - Unit Testing
+  - Agile
+
+experience:
+  - title: "Senior Software Engineer"
+    company: "Northwind Data"
+    location: "Remote"
+    start: "2021"
+    end: "Present"
+    bullets:
+      - "Designed and shipped a microservices platform on Kubernetes serving 12M requests/day, cutting p99 latency 43%."
+      - "Built event-driven pipelines with Kafka and Python processing 2TB/day for analytics."
+      - "Led migration from monolith to microservices; introduced CI/CD with GitHub Actions reducing deploy time from 40m to 6m."
+      - "Mentored 5 engineers and ran the team's system-design review process."
+
+  - title: "Software Engineer"
+    company: "BrightLoop"
+    location: "Austin, TX"
+    start: "2017"
+    end: "2021"
+    bullets:
+      - "Developed REST and GraphQL APIs in Go and Python backing a 500k-user product."
+      - "Implemented Redis caching and query optimization, reducing database load 60%."
+      - "Containerized services with Docker and provisioned AWS infra with Terraform."
+      - "Wrote unit and integration tests raising coverage from 45% to 88%."
+
+projects:
+  - "OpenTrace — an open-source distributed tracing helper (2k+ GitHub stars)."
+
+education:
+  - degree: "B.S. Computer Science"
+    school: "University of Texas at Austin"
+    location: "Austin, TX"
+    year: "2016"
+    details: "Graduated with honors; focus in distributed systems."
+
+certifications:
+  - "AWS Certified Solutions Architect – Associate"
+  - "Certified Kubernetes Application Developer (CKAD)"
