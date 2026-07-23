@@ -521,9 +521,11 @@
         </div>
         <div class="note">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
-          <span>Live results come from public job APIs and may be blocked on some hosts (including the private
-          share link). The board links below always work — they open each site pre-filtered to your exact time
-          window in a new tab, so you can browse or copy a job description and paste it into Tailor.</span>
+          <span>Live results come from public job APIs (Remotive, The Muse, Jobicy, Arbeitnow) and may be
+          blocked on some hosts (including the private share link). The board links below always work.
+          <b>For Indeed &amp; LinkedIn</b> — which have no public API — install the companion browser extension
+          (in <code>/extension</code>): it reads the job you're viewing on their site, tailors your resume, and
+          autofills the application in place.</span>
         </div>
       </div>
 
@@ -1226,10 +1228,12 @@ function stripLatex(t){
   if(!/\\[a-zA-Z]+|\\documentclass|\$/.test(t)) return t;
   t=t.replace(/(^|[^\\])%.*$/gm,"$1");
   t=t.replace(/\\(documentclass|usepackage|geometry|pagestyle|hypersetup|titleformat|titlespacing|def|renewcommand|newcommand|setlength|input|include|vspace|hspace|rule)\s*(\[[^\]]*\])?\s*(\{[^{}]*\})*/g,"");
-  t=t.replace(/\\begin\{[^}]*\}(\[[^\]]*\])?(\{[^}]*\})?/g,"\n").replace(/\\end\{[^}]*\}/g,"\n");
-  t=t.replace(/\\(section|subsection|subsubsection|textbf|textit|underline|emph|textsc|href|large|Large|huge|small|item)\*?\s*(\[[^\]]*\])?\s*\{/g," {");
+  t=t.replace(/\\(section|subsection|subsubsection|part|chapter)\*?\s*(\[[^\]]*\])?\s*\{([^{}]*)\}/g,"\n$3\n");  // section titles onto their own line
+  t=t.replace(/\\begin\{[^}]*\}(\[[^\]]*\])?/g,"\n").replace(/\\end\{[^}]*\}/g,"\n");
+  t=t.replace(/\\(textbf|textit|underline|emph|textsc|href|large|Large|huge|small|item)\*?\s*(\[[^\]]*\])?\s*\{/g," {");
   t=t.replace(/\\item\s*/g,"\n- ");
-  t=t.replace(/\\\\|\\newline|\\hfill|\\\s/g,"\n");
+  t=t.replace(/\\hfill/g,"   ");           // horizontal fill -> stays on same line
+  t=t.replace(/\\\\|\\newline|\\\s/g,"\n");
   t=t.replace(/[&~]/g," ").replace(/\\[,;:!%&_#{}]/g,m=>m[1]);
   t=t.replace(/\\[a-zA-Z]+\*?\s*(\[[^\]]*\])?/g," ");
   t=t.replace(/\$[^$]*\$/g," ").replace(/[{}]/g," ");
@@ -1408,6 +1412,21 @@ async function fetchArbeitnow(){
     url:x.url,description:htmlToText(x.description||""),created:x.created_at||0,
     tags:(x.tags||[]).concat(x.job_types||[]),source:"arbeitnow"}));
 }
+async function fetchMuse(){
+  const j=await fetchWithTimeout("https://www.themuse.com/api/public/jobs?page=1");
+  return (j.results||[]).map(x=>({title:x.name,company:(x.company||{}).name||"",
+    location:((x.locations||[])[0]||{}).name||"",url:(x.refs||{}).landing_page||"",
+    description:htmlToText(x.contents||""),created:Math.floor(new Date(x.publication_date).getTime()/1000)||0,
+    tags:(x.categories||[]).map(c=>c.name),source:"themuse"}));
+}
+async function fetchJobicy(kw){
+  const tag=kw?("&tag="+encodeURIComponent(kw.split(/\s+/)[0])):"";
+  const j=await fetchWithTimeout("https://jobicy.com/api/v2/remote-jobs?count=50"+tag);
+  return (j.jobs||[]).map(x=>({title:x.jobTitle,company:x.companyName,location:x.jobGeo||"Remote",
+    url:x.url,description:htmlToText(x.jobDescription||x.jobExcerpt||""),
+    created:Math.floor(new Date(x.pubDate).getTime()/1000)||0,
+    tags:[].concat(x.jobIndustry||[]),source:"jobicy"}));
+}
 
 async function searchJobs(){
   const kw=($("f_kw").value||"").trim().toLowerCase();
@@ -1416,7 +1435,9 @@ async function searchJobs(){
   $("findStatus").textContent="Searching public job boards…";
   $("findResults").innerHTML="";
   let jobs=[]; const blocked=[];
-  const sources=[["Remotive",()=>fetchRemotive(($("f_kw").value||"").trim())],["Arbeitnow",fetchArbeitnow]];
+  const kwRaw=($("f_kw").value||"").trim();
+  const sources=[["Remotive",()=>fetchRemotive(kwRaw)],["The Muse",fetchMuse],
+    ["Jobicy",()=>fetchJobicy(kwRaw)],["Arbeitnow",fetchArbeitnow]];
   for(const [name,fn] of sources){
     try{ jobs=jobs.concat(await fn()); }catch(e){ blocked.push(name); }
   }
