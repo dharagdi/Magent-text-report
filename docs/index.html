@@ -267,6 +267,39 @@
   .empty svg{width:44px;height:44px;opacity:.4;margin-bottom:12px;}
   .empty p{font-size:14px;}
 
+  /* ── Resume import ──────────────────────────────────────────────── */
+  .imptoggle{display:inline-flex;background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:3px;gap:3px;margin-bottom:14px;}
+  .imptoggle button{background:transparent;border:none;color:var(--text-muted);
+    padding:7px 16px;border-radius:6px;font-size:13px;font-weight:600;}
+  .imptoggle button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow);}
+  .dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    border:1.5px dashed var(--border-strong);border-radius:var(--radius);padding:38px 20px;
+    cursor:pointer;text-align:center;transition:border-color .15s,background .15s;background:var(--surface2);}
+  .dropzone:hover,.dropzone.drag{border-color:var(--accent);background:var(--accent-soft);}
+  .dropzone svg{width:30px;height:30px;color:var(--accent);}
+  .dropzone .dz-main{font-size:14px;font-weight:600;}
+  .dropzone .dz-main span{color:var(--accent);text-decoration:underline;}
+  .dropzone .dz-sub{font-size:12px;color:var(--text-dim);}
+  .import-result{margin-top:14px;border-radius:var(--radius-sm);padding:13px 15px;font-size:13px;
+    display:flex;gap:10px;align-items:flex-start;}
+  .import-result.ok{background:var(--good-bg);color:var(--good-ink);border:1px solid color-mix(in srgb,var(--good) 30%,transparent);}
+  .import-result.warn{background:var(--warn-bg);color:var(--warn-ink);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);}
+  .import-result svg{flex:none;width:18px;height:18px;margin-top:1px;}
+  .import-result b{font-weight:700;}
+  details.review{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);
+    box-shadow:var(--shadow);padding:0 20px;}
+  details.review > summary{cursor:pointer;list-style:none;padding:15px 0;font-size:13.5px;font-weight:600;
+    display:flex;align-items:center;gap:6px;user-select:none;}
+  details.review > summary::-webkit-details-marker{display:none;}
+  details.review > summary::before{content:"▸";color:var(--text-dim);transition:transform .15s;display:inline-block;}
+  details.review[open] > summary::before{transform:rotate(90deg);}
+  details.review .rv-hint{color:var(--text-dim);font-weight:400;font-size:12.5px;}
+  details.review > .card{border:none;box-shadow:none;padding-left:0;padding-right:0;
+    border-top:1px solid var(--border);border-radius:0;}
+  details.review > .grid2{padding-bottom:18px;}
+  details.review[open]{padding-bottom:4px;}
+
   /* ── Job finder ─────────────────────────────────────────────────── */
   .freshbar{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0;}
   .freshchip{border:1px solid var(--border-strong);background:var(--surface2);color:var(--text-muted);
@@ -358,12 +391,49 @@
     <section class="view active" id="view-resume">
       <div class="page-h">
         <div class="eyebrow">Step 1</div>
-        <h1>Your master resume</h1>
-        <p>Fill this in once, truthfully and completely. Every application is tailored
-           from here — the tool only reorders and surfaces what you actually have. It never invents anything.</p>
+        <h1>Your base resume</h1>
+        <p>Upload or paste your resume once. Every job you tailor for is built from this — the tool
+           only reorders and surfaces what you actually have. It never invents anything.</p>
       </div>
 
       <div class="card">
+        <h2>Import your resume</h2>
+        <div class="sub">Paste it (plain text, LaTeX, or Markdown all work) or drop in a file. We detect your details automatically.</div>
+        <div class="imptoggle" id="impToggle">
+          <button type="button" class="active" data-imp="paste">Paste</button>
+          <button type="button" data-imp="upload">Upload file</button>
+        </div>
+
+        <div id="imp-paste" class="imp-pane">
+          <textarea id="pasteBox" style="min-height:200px;font-family:var(--font-mono);font-size:12px;"
+            placeholder="Paste your full resume here…&#10;&#10;Plain text, LaTeX source (\documentclass…), or Markdown — all supported."></textarea>
+          <div class="btn-row" style="margin-top:10px;">
+            <button class="btn" id="usePaste" type="button">Use this resume</button>
+            <button class="btn ghost" id="loadSample" type="button">Load a sample</button>
+          </div>
+        </div>
+
+        <div id="imp-upload" class="imp-pane" style="display:none;">
+          <label class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" accept=".pdf,.txt,.tex,.md,.markdown,.text" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>
+            <div class="dz-main">Drop a file here, or <span>browse</span></div>
+            <div class="dz-sub">PDF, LaTeX (.tex), Markdown or plain text</div>
+          </label>
+          <div class="note" style="margin-top:10px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+            <span>PDFs are read in your browser. Cleanly-exported PDFs (Word, Google Docs, LaTeX) work well;
+            if a PDF uses unusual fonts we can't read, we'll tell you and you can paste the text instead.</span>
+          </div>
+        </div>
+
+        <div id="importResult" class="import-result" style="display:none;"></div>
+      </div>
+
+      <details class="review" id="reviewDetails">
+        <summary><span class="rv-open">Review &amp; edit detected details</span><span class="rv-hint"> — optional, only if something looks off</span></summary>
+
+      <div class="card" style="margin-top:14px;">
         <h2>Contact &amp; headline</h2>
         <div class="row">
           <div class="field"><label class="fl">Full name</label><input type="text" id="r_name" placeholder="Jordan A. Rivera"></div>
@@ -416,10 +486,11 @@
         </div>
       </div>
 
+      </details>
+
       <div class="btn-row" style="margin-top:18px;">
         <button class="btn" id="saveResume" type="button">Save resume</button>
-        <button class="btn ghost" id="loadSample" type="button">Load sample resume</button>
-        <button class="btn ghost" id="downloadMaster" type="button">Download as PDF</button>
+        <button class="btn ghost" id="downloadMaster" type="button">Download current as PDF</button>
         <span id="resumeStatus" class="hint" style="margin-left:auto;"></span>
       </div>
     </section>
@@ -636,6 +707,7 @@ function resumeText(r){
   const parts=[r.name,r.title,r.summary,(r.skills||[]).join(" "),(r.certifications||[]).join(" "),(r.projects||[]).join(" ")];
   for(const e of (r.experience||[])) parts.push(e.title,e.company,(e.bullets||[]).join(" "));
   for(const ed of (r.education||[])) parts.push(ed.degree,ed.school,ed.details);
+  if(r.raw) parts.push(r.raw);   // include original imported text so scoring never misses content
   return parts.filter(Boolean).join("\n");
 }
 function structureChecks(r){
@@ -1079,6 +1151,202 @@ function renderPipeline(){
     const apps=loadApps().filter(x=>x.id!==b.dataset.del); saveApps(apps); renderPipeline(); updatePipeCount();
   }));
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   Resume import — LaTeX/text/Markdown paste + PDF upload (pure JS)
+   ════════════════════════════════════════════════════════════════════ */
+/* -- DEFLATE inflate (RFC 1951), growable output -- */
+const _LB=[3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+const _LE=[0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
+const _DB=[1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+const _DE=[0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+const _CLO=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+function _tree(lens,n){const c=new Array(16).fill(0);for(let i=0;i<n;i++)c[lens[i]]++;c[0]=0;
+  const o=new Array(16).fill(0);for(let i=1;i<16;i++)o[i]=o[i-1]+c[i-1];const sy=new Array(n);
+  for(let s=0;s<n;s++)if(lens[s])sy[o[lens[s]]++]=s;return{c,sy};}
+function inflateRaw(input,start){
+  let pos=(start||0)<<3;
+  const gb=()=>{const b=(input[pos>>3]>>(pos&7))&1;pos++;return b;};
+  const gbs=k=>{let v=0;for(let i=0;i<k;i++)v|=gb()<<i;return v;};
+  const dec=t=>{let code=0,first=0,index=0;for(let len=1;len<=15;len++){code|=gb();const cnt=t.c[len];
+    if(code-first<cnt)return t.sy[index+(code-first)];index+=cnt;first+=cnt;first<<=1;code<<=1;}throw new Error("huffman");};
+  const fl=new Array(288);for(let i=0;i<144;i++)fl[i]=8;for(let i=144;i<256;i++)fl[i]=9;for(let i=256;i<280;i++)fl[i]=7;for(let i=280;i<288;i++)fl[i]=8;
+  const fLt=_tree(fl,288),fDt=_tree(new Array(30).fill(5),30);
+  const out=[];let last;
+  do{ last=gb();const type=gbs(2);
+    if(type===0){pos=(pos+7)&~7;let p=pos>>3;const len=input[p]|(input[p+1]<<8);p+=4;for(let i=0;i<len;i++)out.push(input[p++]);pos=p<<3;}
+    else{let lt,dt;
+      if(type===1){lt=fLt;dt=fDt;}
+      else if(type===2){const hlit=gbs(5)+257,hdist=gbs(5)+1,hclen=gbs(4)+4;const cl=new Array(19).fill(0);
+        for(let i=0;i<hclen;i++)cl[_CLO[i]]=gbs(3);const clt=_tree(cl,19);const L=new Array(hlit+hdist).fill(0);let n=0;
+        while(n<hlit+hdist){const s=dec(clt);if(s<16)L[n++]=s;else if(s===16){let r=gbs(2)+3;const pv=L[n-1];while(r--)L[n++]=pv;}
+          else if(s===17){let r=gbs(3)+3;while(r--)L[n++]=0;}else{let r=gbs(7)+11;while(r--)L[n++]=0;}}
+        lt=_tree(L.slice(0,hlit),hlit);dt=_tree(L.slice(hlit),hdist);}
+      else throw new Error("btype");
+      for(;;){const s=dec(lt);if(s===256)break;if(s<256)out.push(s);
+        else{const e=s-257;const length=_LB[e]+gbs(_LE[e]);const ds=dec(dt);const dist=_DB[ds]+gbs(_DE[ds]);
+          let from=out.length-dist;for(let i=0;i<length;i++)out.push(out[from+i]);}}}
+  }while(!last);
+  return new Uint8Array(out);
+}
+function zInflate(b){ if(b.length>2&&(b[0]&0x0f)===8&&(((b[0]<<8|b[1])%31)===0))return inflateRaw(b,2); return inflateRaw(b,0); }
+
+/* -- PDF text extraction -- */
+function _l1(b){let s="";const C=8192;for(let i=0;i<b.length;i+=C)s+=String.fromCharCode.apply(null,b.subarray(i,i+C));return s;}
+function _pdfStr(s){let o="";for(let i=0;i<s.length;i++){const c=s[i];
+  if(c==="\\"){const n=s[i+1];
+    if(n==="n"){o+="\n";i++;}else if(n==="r"){o+="\r";i++;}else if(n==="t"){o+="\t";i++;}
+    else if(n==="("||n===")"||n==="\\"){o+=n;i++;}
+    else if(n>="0"&&n<="7"){let x=n;i++;for(let k=0;k<2&&s[i+1]>="0"&&s[i+1]<="7";k++)x+=s[++i];o+=String.fromCharCode(parseInt(x,8));}
+    else if(n==="\n"){i++;}else{o+=n;i++;}
+  }else o+=c;}return o;}
+function _content2text(c){let text="",i=0;const n=c.length;
+  while(i<n){const ch=c[i];
+    if(ch==="("){let d=1,j=i+1,buf="";while(j<n&&d>0){const cj=c[j];if(cj==="\\"){buf+=cj+(c[j+1]||"");j+=2;continue;}
+      if(cj==="(")d++;else if(cj===")"){d--;if(d===0)break;}buf+=cj;j++;}text+=_pdfStr(buf);i=j+1;continue;}
+    if(ch==="<"&&c[i+1]!=="<"){let j=i+1,h="";while(j<n&&c[j]!==">"){h+=c[j];j++;}h=h.replace(/\s+/g,"");if(h.length%2)h+="0";
+      for(let k=0;k<h.length;k+=2){const cd=parseInt(h.substr(k,2),16);if(!isNaN(cd))text+=String.fromCharCode(cd);}i=j+1;continue;}
+    if(ch==="T"){const op=c.substr(i,2);if(op==="Td"||op==="TD"||op==="T*"){text+="\n";i+=2;continue;}}
+    if(ch==="'"||ch==="\""){text+="\n";i++;continue;}
+    i++;}return text;}
+function extractPdfText(bytes){
+  const raw=_l1(bytes);let content="";const re=/stream\r?\n/g;let m;
+  while((m=re.exec(raw))){const ss=m.index+m[0].length;const ei=raw.indexOf("endstream",ss);if(ei<0)continue;
+    let end=ei;if(raw[end-1]==="\n")end--;if(raw[end-1]==="\r")end--;const slice=bytes.subarray(ss,end);let dec;
+    try{ if(slice.length>2&&(slice[0]&0x0f)===8&&(((slice[0]<<8|slice[1])%31)===0))dec=zInflate(slice); else dec=slice; }catch(e){dec=null;}
+    if(dec){const s=_l1(dec);if(s.indexOf("Tj")>=0||s.indexOf("TJ")>=0||s.indexOf(" Td")>=0||s.indexOf("BT")>=0)content+=_content2text(s)+"\n";}
+    re.lastIndex=ei+9;}
+  return content.replace(/\r/g,"").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+}
+function looksLikeText(t){ if(!t||t.length<40)return false;const letters=(t.match(/[A-Za-z]/g)||[]).length;
+  const good=(t.match(/[A-Za-z0-9\s.,@()\/+#:&'"-]/g)||[]).length;return letters>=25&&good/t.length>=0.72; }
+
+/* -- LaTeX -> text -- */
+function stripLatex(t){
+  if(!/\\[a-zA-Z]+|\\documentclass|\$/.test(t)) return t;
+  t=t.replace(/(^|[^\\])%.*$/gm,"$1");
+  t=t.replace(/\\(documentclass|usepackage|geometry|pagestyle|hypersetup|titleformat|titlespacing|def|renewcommand|newcommand|setlength|input|include|vspace|hspace|rule)\s*(\[[^\]]*\])?\s*(\{[^{}]*\})*/g,"");
+  t=t.replace(/\\begin\{[^}]*\}(\[[^\]]*\])?(\{[^}]*\})?/g,"\n").replace(/\\end\{[^}]*\}/g,"\n");
+  t=t.replace(/\\(section|subsection|subsubsection|textbf|textit|underline|emph|textsc|href|large|Large|huge|small|item)\*?\s*(\[[^\]]*\])?\s*\{/g," {");
+  t=t.replace(/\\item\s*/g,"\n- ");
+  t=t.replace(/\\\\|\\newline|\\hfill|\\\s/g,"\n");
+  t=t.replace(/[&~]/g," ").replace(/\\[,;:!%&_#{}]/g,m=>m[1]);
+  t=t.replace(/\\[a-zA-Z]+\*?\s*(\[[^\]]*\])?/g," ");
+  t=t.replace(/\$[^$]*\$/g," ").replace(/[{}]/g," ");
+  return t.replace(/[ \t]{2,}/g," ").replace(/\n{3,}/g,"\n\n").trim();
+}
+
+/* -- text -> structured Resume -- */
+const _SECMAP=[[/^(summary|objective|profile|about( me)?)\b/i,"summary"],
+  [/^(technical skills|skills|core competencies|technologies|tech stack|competencies)\b/i,"skills"],
+  [/^(experience|work experience|employment|professional experience|work history)\b/i,"experience"],
+  [/^(education|academic background)\b/i,"education"],
+  [/^(projects|personal projects|selected projects)\b/i,"projects"],
+  [/^(certifications?|licens\w+|certificates?|awards?)\b/i,"certifications"]];
+function _sectionOf(line){const l=line.trim().replace(/[:•\-–—\s]+$/,"");if(l.length>42)return null;
+  for(const [re,k] of _SECMAP)if(re.test(l))return k;return null;}
+function parseResumeText(rawText){
+  const raw=(rawText||"").replace(/\r/g,"");
+  const lines=raw.split("\n").map(l=>l.replace(/\s+$/,""));
+  const nonEmpty=lines.filter(l=>l.trim());
+  const emailM=raw.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+  const phoneM=raw.match(/(\+?\d[\d\s().-]{7,}\d)/);
+  const links=[...new Set((raw.match(/((https?:\/\/)?(www\.)?(linkedin\.com|github\.com|gitlab\.com)\/[^\s|,)]+)/gi)||[]))].slice(0,4);
+  let name="",title="";
+  for(const l of nonEmpty){const s=l.trim();
+    if(_sectionOf(s))continue; if(emailM&&s.includes(emailM[0]))continue;
+    if(/@|https?:|linkedin|github|\d{3}[\s.-]*\d/i.test(s))continue;
+    const w=s.split(/\s+/);
+    if(!name&&w.length<=5&&/^[A-Za-z][A-Za-z.,'\- ]+$/.test(s)){name=s.replace(/,$/,"");continue;}
+    if(name&&!title&&s.length<=60&&!/[.]\s/.test(s)){title=s;break;}}
+  const sec={summary:[],skills:[],experience:[],education:[],projects:[],certifications:[]};let cur=null;
+  for(const l of lines){const k=_sectionOf(l);if(k){cur=k;continue;}if(cur)sec[cur].push(l);}
+  const clean=a=>a.filter(x=>x.trim());
+  let skills=[];
+  for(const l of clean(sec.skills))skills.push(...l.replace(/^[-•*·]\s*/,"").split(/[,|;•·]|\s{3,}/));
+  skills=skills.map(s=>s.trim()).filter(s=>s&&s.length<40);
+  const low=raw.toLowerCase();
+  for(const sk of KNOWN_SKILLS){const re=(()=>{try{return new RegExp("(?<![A-Za-z0-9])"+sk.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?![A-Za-z0-9])","i");}catch(e){return null;}})();
+    if(re&&re.test(low)&&!skills.some(x=>x.toLowerCase()===sk))skills.push(titleize(sk));}
+  skills=[...new Map(skills.map(s=>[s.toLowerCase(),s])).values()];
+  const experience=[];let entry=null;
+  for(const l of clean(sec.experience)){
+    const s=l.trim();
+    const isBullet=/^[-•*·▪◦]\s+/.test(s);
+    const hasDate=/((19|20)\d{2})/.test(s);
+    const hasSep=/\s+(--|-|–|—|\||at)\s+/i.test(s);
+    const header=!isBullet&&(hasDate||hasSep||(s.length<=46&&!/[.]$/.test(s)));
+    if(header){ entry={title:s,company:"",location:"",start:"",end:"",bullets:[]};
+      const dm=s.match(/((19|20)\d{2})\s*(?:--|-|–|—|to)?\s*(present|current|(19|20)\d{2})?/i);
+      if(dm){entry.title=s.slice(0,dm.index).trim().replace(/[|,\-–—]\s*$/,"")||s;entry.start=dm[1];entry.end=(dm[3]||"").trim();}
+      const sp=entry.title.split(/\s+(?:--|[-–—|])\s+|\s+at\s+/i);
+      if(sp.length>=2){entry.title=sp[0].trim();entry.company=sp.slice(1).join(" ").trim();}
+      experience.push(entry);
+    } else { if(!entry){entry={title:"Experience",company:"",location:"",start:"",end:"",bullets:[]};experience.push(entry);}
+      entry.bullets.push(s.replace(/^[-•*·▪◦]\s+/,"")); }
+  }
+  const education=clean(sec.education).map(l=>{const p=l.split(/\s+(?:--|[-–—|])\s+|,\s*/);
+    return {degree:p[0]||l.trim(),school:p[1]||"",location:"",year:(l.match(/(19|20)\d{2}/)||[""])[0],details:p.slice(2).join(", ")};});
+  const certifications=clean(sec.certifications).flatMap(l=>l.replace(/^[-•*·]\s*/,"").split(/[,;]|\s{3,}/)).map(s=>s.trim()).filter(Boolean);
+  const projects=clean(sec.projects).map(l=>l.replace(/^[-•*·]\s*/,"").trim()).filter(Boolean);
+  const summary=clean(sec.summary).join(" ").trim();
+  if(!experience.length){
+    const body=nonEmpty.filter(l=>{const s=l.trim();return s!==name&&s!==title&&!_sectionOf(s)&&!(emailM&&s.includes(emailM[0]));});
+    if(body.length)experience.push({title:"Experience",company:"",location:"",start:"",end:"",bullets:body.slice(0,25).map(x=>x.replace(/^[-•*·]\s*/,"").trim())});
+  }
+  return {name,title,email:emailM?emailM[0]:"",phone:phoneM?phoneM[0].trim():"",location:"",links,summary,skills,experience,education,certifications,projects,raw};
+}
+
+/* -- import UI wiring -- */
+function importResumeFromText(text, srcLabel){
+  const cleaned=stripLatex(text);
+  const parsed=parseResumeText(cleaned);
+  fillForm(parsed);
+  master=collectForm(); master.raw=cleaned;
+  localStorage.setItem(LS_RESUME,JSON.stringify(master));
+  const nRoles=(parsed.experience||[]).length, nSkills=(parsed.skills||[]).length;
+  const box=$("importResult"); box.style.display="flex"; box.className="import-result ok";
+  box.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    <div><b>Imported${srcLabel?" from "+esc(srcLabel):""}.</b> Detected ${parsed.name?"“"+esc(parsed.name)+"”, ":""}${nRoles} role${nRoles===1?"":"s"}, ${nSkills} skill${nSkills===1?"":"s"}.
+    Saved as your base resume — head to <b>Find Jobs</b> or <b>Tailor &amp; Apply</b>. Anything off? Open “Review &amp; edit detected details”.</div>`;
+  $("resumeStatus").textContent="Imported ✓";
+  updatePipeCount(); checkResumeBanner();
+  toast("Base resume imported & saved");
+}
+function importWarn(msg){ const box=$("importResult"); box.style.display="flex"; box.className="import-result warn";
+  box.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div>${msg}</div>`; }
+
+document.querySelectorAll("#impToggle button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#impToggle button").forEach(x=>x.classList.toggle("active",x===b));
+  $("imp-paste").style.display=b.dataset.imp==="paste"?"block":"none";
+  $("imp-upload").style.display=b.dataset.imp==="upload"?"block":"none";
+}));
+$("usePaste").addEventListener("click",()=>{
+  const t=$("pasteBox").value.trim();
+  if(t.length<30){ importWarn("That looks too short for a resume — paste the full text."); return; }
+  importResumeFromText(t,"pasted text");
+});
+async function handleFile(file){
+  if(!file) return;
+  const name=file.name.toLowerCase();
+  try{
+    if(name.endsWith(".pdf")){
+      const buf=new Uint8Array(await file.arrayBuffer());
+      const text=extractPdfText(buf);
+      if(looksLikeText(text)){ importResumeFromText(text, file.name); }
+      else { importWarn(`We couldn't reliably read text from <b>${esc(file.name)}</b> (it may use embedded/scanned fonts). Please switch to <b>Paste</b> and paste your resume text or LaTeX instead.`); }
+    } else {
+      const text=await file.text();
+      if(text.trim().length<30){ importWarn("That file looks empty."); return; }
+      importResumeFromText(text, file.name);
+    }
+  }catch(e){ importWarn("Couldn't read that file: "+esc(String(e.message||e))+". Try pasting instead."); }
+}
+$("fileInput").addEventListener("change",e=>handleFile(e.target.files[0]));
+const dz=$("dropzone");
+["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("drag");}));
+dz.addEventListener("drop",e=>{ if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
 
 /* ── Job finder ────────────────────────────────────────────────────── */
 const FRESH=[{l:"6h",s:21600},{l:"12h",s:43200},{l:"1 day",s:86400},{l:"2 days",s:172800},{l:"3 days",s:259200},{l:"4 days",s:345600},{l:"5 days",s:432000},{l:"7 days",s:604800},{l:"Any",s:null}];
