@@ -336,6 +336,33 @@ function extractPdfText(bytes){
 function looksLikeText(t){ if(!t||t.length<40)return false;const letters=(t.match(/[A-Za-z]/g)||[]).length;
   const good=(t.match(/[A-Za-z0-9\s.,@()\/+#:&'"-]/g)||[]).length;return letters>=25&&good/t.length>=0.72; }
 
+/* -- .docx text extraction (a docx is a ZIP of XML; reuse inflateRaw) -- */
+function extractDocxText(bytes){
+  const dv=bytes;
+  const u16=o=>dv[o]|(dv[o+1]<<8);
+  const u32=o=>(dv[o]|(dv[o+1]<<8)|(dv[o+2]<<16)|(dv[o+3]<<24))>>>0;
+  // Scan local file headers (PK\x03\x04) for word/document.xml. Scanning by
+  // signature (rather than trusting sizes) is robust to ZIP data descriptors.
+  let dataStart=-1, method=8;
+  for(let i=0;i+30<dv.length;i++){
+    if(u32(i)===0x04034b50){
+      const nameLen=u16(i+26), extraLen=u16(i+28);
+      const name=_l1(dv.subarray(i+30,i+30+nameLen));
+      if(name==="word/document.xml"){ method=u16(i+8); dataStart=i+30+nameLen+extraLen; break; }
+    }
+  }
+  if(dataStart<0) return "";
+  let raw;
+  try{ raw = method===0 ? dv.subarray(dataStart) : inflateRaw(dv,dataStart); }catch(e){ return ""; }
+  const xml=_l1(raw);
+  const un=s=>s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'").replace(/&amp;/g,"&");
+  // Each <w:p> is a paragraph; <w:tab/> a tab. Strip remaining tags -> visible text.
+  const text=xml.split(/<\/w:p>/).map(p=>
+    un(p.replace(/<w:tab\/?>/g,"   ").replace(/<[^>]+>/g,"")).replace(/\s+$/,"")
+  ).filter(l=>l.trim()).join("\n");
+  return text.replace(/\n{3,}/g,"\n\n").trim();
+}
+
 /* -- LaTeX -> text -- */
 function stripLatex(t){
   if(!/\\[a-zA-Z]+|\\documentclass|\$/.test(t)) return t;
@@ -398,6 +425,7 @@ function parseResumeText(rawText){
       if(dm){entry.title=s.slice(0,dm.index).trim().replace(/[|,\-–—]\s*$/,"")||s;entry.start=dm[1];entry.end=(dm[3]||"").trim();}
       const sp=entry.title.split(/\s+(?:--|[-–—|])\s+|\s+at\s+/i);
       if(sp.length>=2){entry.title=sp[0].trim();entry.company=sp.slice(1).join(" ").trim();}
+      if(entry.company) entry.company=entry.company.replace(/[\s(){}\[\]|,.–—-]+$/,"").trim();
       experience.push(entry);
     } else { if(!entry){entry={title:"Experience",company:"",location:"",start:"",end:"",bullets:[]};experience.push(entry);}
       entry.bullets.push(s.replace(/^[-•*·▪◦]\s+/,"")); }

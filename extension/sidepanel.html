@@ -168,7 +168,7 @@
       </div>
       <div id="impUpload" style="display:none;">
         <label class="drop" id="drop">
-          <input type="file" id="fileInput" accept=".pdf,.txt,.tex,.md,.markdown" hidden>
+          <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.tex,.md,.markdown" hidden>
           Drop a file or <b>browse</b><br><span style="font-size:11px;">PDF, LaTeX, Markdown, text</span>
         </label>
       </div>
@@ -190,6 +190,19 @@
         <div class="field"><label class="fl">LinkedIn URL</label><input id="p_linkedin"></div>
         <div class="field"><label class="fl">Website / GitHub</label><input id="p_website"></div>
       </div>
+      <details style="margin-bottom:9px;padding:0;border:none;background:none;">
+        <summary style="padding:6px 0;font-size:11px;">Address &amp; extras (optional)</summary>
+        <div class="field"><label class="fl">Street address</label><input id="p_address"></div>
+        <div class="two">
+          <div class="field"><label class="fl">City</label><input id="p_city"></div>
+          <div class="field"><label class="fl">State / region</label><input id="p_state"></div>
+        </div>
+        <div class="two">
+          <div class="field"><label class="fl">Postal / ZIP</label><input id="p_postal"></div>
+          <div class="field"><label class="fl">Country</label><input id="p_country"></div>
+        </div>
+        <div class="field"><label class="fl">How did you hear about us?</label><input id="p_source" placeholder="e.g. LinkedIn, Company website"></div>
+      </details>
       <div class="two">
         <div class="field"><label class="fl">Desired salary</label><input id="p_salary" placeholder="e.g. 120000"></div>
         <div class="field"><label class="fl">Years experience</label><input id="p_years" placeholder="e.g. 6"></div>

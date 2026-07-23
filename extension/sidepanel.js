@@ -85,6 +85,11 @@ async function handleFile(file) {
       const text = extractPdfText(buf);
       if (looksLikeText(text)) importFromText(text, file.name);
       else importWarn(`Couldn't read text from <b>${esc(file.name)}</b> (unusual/scanned fonts). Switch to <b>Paste</b> and paste the text.`);
+    } else if (name.endsWith(".docx")) {
+      const buf = new Uint8Array(await file.arrayBuffer());
+      const text = extractDocxText(buf);
+      if (looksLikeText(text)) importFromText(text, file.name);
+      else importWarn(`Couldn't read <b>${esc(file.name)}</b>. If it's an old .doc, re-save as .docx or paste the text.`);
     } else {
       const text = await file.text();
       if (text.trim().length < 30) { importWarn("That file looks empty."); return; }
@@ -99,7 +104,8 @@ const drop = $("drop");
 drop.addEventListener("drop", (e) => { if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
 
 /* ── profile ─────────────────────────────────────────────── */
-const PF = ["name", "email", "phone", "location", "linkedin", "website", "salary", "years", "notice"];
+const PF = ["name", "email", "phone", "location", "linkedin", "website", "salary", "years", "notice",
+  "address", "city", "state", "postal", "country", "source"];
 function fillProfileForm() {
   PF.forEach((k) => { const el = $("p_" + k); if (el) el.value = profile[k] || ""; });
   $("p_workAuth").value = String(profile.workAuth !== false);

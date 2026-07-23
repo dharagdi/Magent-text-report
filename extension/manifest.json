@@ -14,7 +14,11 @@
     "https://*.myworkdayjobs.com/*",
     "https://*.ashbyhq.com/*",
     "https://*.workable.com/*",
-    "https://*.smartrecruiters.com/*"
+    "https://*.smartrecruiters.com/*",
+    "https://*.icims.com/*",
+    "https://*.taleo.net/*",
+    "https://*.jobvite.com/*",
+    "https://*.bamboohr.com/*"
   ],
   "background": { "service_worker": "background.js" },
   "side_panel": { "default_path": "sidepanel.html" },
@@ -35,7 +39,11 @@
         "https://*.myworkdayjobs.com/*",
         "https://*.ashbyhq.com/*",
         "https://*.workable.com/*",
-        "https://*.smartrecruiters.com/*"
+        "https://*.smartrecruiters.com/*",
+        "https://*.icims.com/*",
+        "https://*.taleo.net/*",
+        "https://*.jobvite.com/*",
+        "https://*.bamboohr.com/*"
       ],
       "js": ["content-autofill.js"],
       "run_at": "document_idle"

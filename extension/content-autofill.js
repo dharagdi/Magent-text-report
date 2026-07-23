@@ -19,15 +19,21 @@
     }
     const al = el.getAttribute("aria-label"); if (al) parts.push(al);
     const lb = el.getAttribute("aria-labelledby");
-    if (lb) { const l = document.getElementById(lb); if (l) parts.push(l.innerText); }
+    if (lb) {
+      lb.split(/\s+/).forEach((id) => { const l = document.getElementById(id); if (l) parts.push(l.innerText); });
+    }
     if (el.placeholder) parts.push(el.placeholder);
     if (el.name) parts.push(el.name);
+    // ATS-specific hooks: Workday (data-automation-id), Greenhouse/Ashby (data-*)
+    ["data-automation-id", "data-qa", "data-testid", "data-field"].forEach((a) => {
+      const v = el.getAttribute(a); if (v) parts.push(v.replace(/[-_]/g, " "));
+    });
     const wrap = el.closest("label"); if (wrap) parts.push(wrap.innerText);
-    // preceding sibling text / question container
-    const grp = el.closest("[class*='field'], [class*='question'], .application-question, fieldset, div");
+    // nearest question/field container's label/legend
+    const grp = el.closest("[class*='field'], [class*='question'], [class*='form-group'], [data-automation-id*='formField'], .application-question, fieldset, div");
     if (grp) {
-      const lbl = grp.querySelector("label, legend, .label, [class*='label']");
-      if (lbl && !el.contains(lbl)) parts.push(lbl.innerText);
+      const lbl = grp.querySelector("label, legend, .label, [class*='label'], [id$='-label']");
+      if (lbl && !lbl.contains(el)) parts.push(lbl.innerText);
     }
     return parts.join(" ").toLowerCase().replace(/\s+/g, " ").trim();
   }
@@ -56,19 +62,26 @@
   }
 
   function buildRules(profile, ctx) {
+    // Order matters — more specific patterns first so "first name" wins over "name".
     return [
-      { re: /first name|given name|\bfname\b/, val: firstLast(profile.name, "first") },
-      { re: /last name|surname|family name|\blname\b/, val: firstLast(profile.name, "last") },
-      { re: /full name|your name|^name$|candidate name|legal name/, val: profile.name },
+      { re: /first[\s_]*name|given name|\bfname\b|forename/, val: firstLast(profile.name, "first") },
+      { re: /last[\s_]*name|surname|family name|\blname\b/, val: firstLast(profile.name, "last") },
+      { re: /preferred name/, val: firstLast(profile.name, "first") },
+      { re: /full[\s_]*name|your name|^name$|candidate name|legal name|applicant name/, val: profile.name },
       { re: /e-?mail/, val: profile.email },
-      { re: /phone|mobile|telephone|\btel\b/, val: profile.phone },
-      { re: /city|location|address|based|postal|zip/, val: profile.location },
+      { re: /phone|mobile|telephone|\btel\b|contact number/, val: profile.phone },
       { re: /linkedin/, val: profile.linkedin },
-      { re: /github|portfolio|personal (site|website)|website|url/, val: profile.website },
-      { re: /salary|compensation|expected pay|desired pay|pay expectation/, val: profile.salary },
-      { re: /years.*experience|experience.*years|yoe/, val: profile.years },
-      { re: /notice period|start date|availability|when.*(start|available)/, val: profile.notice },
-      { re: /cover letter|why.*(you|interest)|message to|motivat|additional info|tell us/, val: ctx.cover, textareaOnly: true },
+      { re: /github|portfolio|personal (site|website)|website|\burl\b/, val: profile.website },
+      { re: /street|address line|address 1|address$/, val: profile.address },
+      { re: /postal|zip/, val: profile.postal },
+      { re: /\bcountry\b/, val: profile.country },
+      { re: /\bstate\b|province|region/, val: profile.state },
+      { re: /\bcity\b|town|locality|current location|based in|location/, val: profile.city || profile.location },
+      { re: /salary|compensation|expected pay|desired pay|pay expectation|rate/, val: profile.salary },
+      { re: /years.*experience|experience.*years|\byoe\b/, val: profile.years },
+      { re: /notice period|start date|availability|when.*(start|available)|earliest/, val: profile.notice },
+      { re: /how did you (hear|find)|source|referr/, val: profile.source || "Company website" },
+      { re: /cover letter|why.*(you|interest)|message to|motivat|additional info|tell us|anything else/, val: ctx.cover, textareaOnly: true },
     ];
   }
 

@@ -23,19 +23,21 @@ click the final **Submit** yourself.
 
 ## Install (takes 1 minute)
 
-1. Download/clone this repo so you have the `extension/` folder on disk.
+Option A — from a zip (easiest to share):
+1. Get **`jobapplier-extension.zip`** and unzip it to a folder.
 2. Open **`chrome://extensions`** (or `edge://extensions`).
 3. Turn on **Developer mode** (top-right).
-4. Click **Load unpacked** and select the `extension/` folder.
+4. Click **Load unpacked** and select the unzipped folder.
 5. Pin the **JobApplier** icon; click it to open the side panel.
 
-To share with a friend: send them the `extension/` folder (or the repo) and the
-same 5 steps. (A signed Chrome Web Store build can come later; load-unpacked
-needs no review.)
+Option B — from the repo: point **Load unpacked** at the `extension/` folder.
+
+Build the zip yourself anytime: `bash extension/build-zip.sh`
+(A signed Chrome Web Store build can come later; load-unpacked needs no review.)
 
 ## Use
 
-1. **Resume tab** → paste or upload your base resume once (PDF / LaTeX / text).
+1. **Resume tab** → paste or upload your base resume once (PDF / **.docx** / LaTeX / text).
    Check the **Autofill profile** (name, email, phone, links, work
    authorization, salary, notice) and **Save profile**.
 2. Open a **job on LinkedIn or Indeed** → **Apply tab** → **Pull job from this
