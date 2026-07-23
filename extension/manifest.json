@@ -1,9 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "JobApplier — Tailor & Autofill",
+  "name": "JobApplier \u2014 Tailor & Autofill",
   "version": "0.1.0",
   "description": "Pull the job you're viewing on LinkedIn/Indeed, ATS-score & tailor your resume, then autofill the application and stage the tailored PDF. You click submit.",
-  "permissions": ["storage", "activeTab", "scripting", "tabs", "sidePanel"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs",
+    "sidePanel"
+  ],
   "host_permissions": [
     "https://*.linkedin.com/*",
     "https://*.indeed.com/*",
@@ -20,15 +26,32 @@
     "https://*.jobvite.com/*",
     "https://*.bamboohr.com/*"
   ],
-  "background": { "service_worker": "background.js" },
-  "side_panel": { "default_path": "sidepanel.html" },
-  "action": { "default_title": "JobApplier — open panel" },
-  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "JobApplier \u2014 open panel"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "content_scripts": [
     {
-      "matches": ["https://*.linkedin.com/*", "https://*.indeed.com/*"],
-      "js": ["content-scrape.js", "content-autofill.js"],
-      "run_at": "document_idle"
+      "matches": [
+        "https://*.linkedin.com/*",
+        "https://*.indeed.com/*"
+      ],
+      "js": [
+        "content-scrape.js",
+        "content-autofill.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
     },
     {
       "matches": [
@@ -45,8 +68,11 @@
         "https://*.jobvite.com/*",
         "https://*.bamboohr.com/*"
       ],
-      "js": ["content-autofill.js"],
-      "run_at": "document_idle"
+      "js": [
+        "content-autofill.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ]
 }

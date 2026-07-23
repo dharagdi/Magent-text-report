@@ -11,6 +11,9 @@
 (function () {
   "use strict";
 
+  const LEARN_KEY = "ja_learned_v1";
+  const PROFILE_KEY = "ja_profile_v1";
+
   function labelText(el) {
     const parts = [];
     if (el.id) {
@@ -62,32 +65,55 @@
   }
 
   function buildRules(profile, ctx) {
-    // Order matters — more specific patterns first so "first name" wins over "name".
+    const p = profile || {};
+    const fullLoc = [p.city || p.location, p.state, p.country].filter(Boolean).join(", ");
+    // Order matters — MOST specific patterns first (e.g. "first name" before "name",
+    // "address line 2" before "address"). Built from the fields Workday/Greenhouse/
+    // Lever/iCIMS/Taleo and LinkedIn/Indeed apply forms actually ask for.
     return [
-      { re: /first[\s_]*name|given name|\bfname\b|forename/, val: firstLast(profile.name, "first") },
-      { re: /last[\s_]*name|surname|family name|\blname\b/, val: firstLast(profile.name, "last") },
-      { re: /preferred name/, val: firstLast(profile.name, "first") },
-      { re: /full[\s_]*name|your name|^name$|candidate name|legal name|applicant name/, val: profile.name },
-      { re: /e-?mail/, val: profile.email },
-      { re: /phone|mobile|telephone|\btel\b|contact number/, val: profile.phone },
-      { re: /linkedin/, val: profile.linkedin },
-      { re: /github|portfolio|personal (site|website)|website|\burl\b/, val: profile.website },
-      { re: /street|address line|address 1|address$/, val: profile.address },
-      { re: /postal|zip/, val: profile.postal },
-      { re: /\bcountry\b/, val: profile.country },
-      { re: /\bstate\b|province|region/, val: profile.state },
-      { re: /\bcity\b|town|locality|current location|based in|location/, val: profile.city || profile.location },
-      { re: /salary|compensation|expected pay|desired pay|pay expectation|rate/, val: profile.salary },
-      { re: /years.*experience|experience.*years|\byoe\b/, val: profile.years },
-      { re: /notice period|start date|availability|when.*(start|available)|earliest/, val: profile.notice },
-      { re: /current employer|company name|employer|organization name/, val: profile.currentEmployer },
-      { re: /current title|job title|current (role|position)|position title/, val: profile.currentTitle },
-      { re: /school|university|college|institution/, val: profile.school },
-      { re: /degree|qualification|field of study|major/, val: profile.degree },
-      { re: /graduat|grad year|year of completion|expected completion/, val: profile.gradYear },
-      { re: /tools|software|technolog|proficien|skills/, val: profile.tools, textareaOnly: true },
-      { re: /how did you (hear|find)|source|referr/, val: profile.source || "Company website" },
-      { re: /cover letter|why.*(you|interest)|message to|motivat|additional info|tell us|anything else/, val: ctx.cover, textareaOnly: true },
+      // — Name —
+      { re: /middle\s*name|middle initial/, val: p.middleName },
+      { re: /first[\s_]*name|given name|\bfname\b|forename|legal first/, val: firstLast(p.name, "first") },
+      { re: /last[\s_]*name|surname|family name|\blname\b|legal last/, val: firstLast(p.name, "last") },
+      { re: /preferred name|nick\s*name|goes by|preferred first/, val: firstLast(p.name, "first") },
+      { re: /full[\s_]*name|your name|^name$|candidate name|legal name|applicant name/, val: p.name },
+      // — Contact —
+      { re: /confirm.*e-?mail|e-?mail.*confirm|verify e-?mail/, val: p.email },
+      { re: /e-?mail/, val: p.email },
+      { re: /country code|dialing code/, val: p.countryCode || "+1" },
+      { re: /mobile|cell|primary phone|phone|telephone|\btel\b|contact number/, val: p.phone },
+      // — Address —
+      { re: /address line ?2|apt|suite|unit|address 2/, val: p.addressLine2 },
+      { re: /street|address line ?1|address 1|mailing address|home address|street address|^address/, val: p.address },
+      { re: /postal|zip|pin ?code|post ?code/, val: p.postal },
+      { re: /\bcounty\b/, val: p.county },
+      { re: /\bstate\b|province|region/, val: p.state },
+      { re: /\bcountry\b|nation/, val: p.country },
+      { re: /\bcity\b|town|locality|current location|based in|where.*located|location/, val: p.city || p.location },
+      // — Links —
+      { re: /linkedin/, val: p.linkedin },
+      { re: /github/, val: p.github || p.website },
+      { re: /portfolio|personal (site|website)|website|web site|\burl\b|homepage/, val: p.website },
+      { re: /twitter|\bx\.com|social/, val: p.twitter },
+      // — Work history (most-recent role) —
+      { re: /current employer|company name|employer name|employer|organization name|company\b/, val: p.currentEmployer },
+      { re: /current title|job title|current (role|position)|position title|title\b/, val: p.currentTitle },
+      { re: /responsibilities|job description|role description|describe your role|duties/, val: p.roleSummary, textareaOnly: true },
+      // — Education —
+      { re: /school|university|college|institution|alma mater/, val: p.school },
+      { re: /degree|qualification|education level/, val: p.degree },
+      { re: /field of study|major|concentration|discipline/, val: p.major || p.degree },
+      { re: /\bgpa\b|grade point/, val: p.gpa },
+      { re: /graduat|grad year|year of (completion|graduation)|expected (completion|graduation)|completion (year|date)/, val: p.gradYear },
+      // — Screening / logistics —
+      { re: /desired salary|salary expectation|expected (salary|pay|compensation)|compensation|desired pay|pay expectation|expected ctc|hourly rate|\brate\b/, val: p.salary },
+      { re: /years.*experience|experience.*years|\byoe\b|total experience/, val: p.years },
+      { re: /notice period|start date|availability|when.*(start|available)|earliest.*(start|available)|available to start/, val: p.notice },
+      { re: /willing to relocate|open to relocat|relocat/, val: p.relocate },
+      { re: /willing to travel|able to travel|travel/, val: p.travel },
+      { re: /how did you (hear|find|learn)|referr(al|ed)|source|hear about/, val: p.source || "LinkedIn" },
+      { re: /tools|software|technolog|proficien|technical skills|\bskills\b/, val: p.tools, textareaOnly: true },
+      { re: /cover letter|why.*(you|interest|role|company)|message to|motivat|additional (info|information)|tell us|anything else|comments/, val: ctx.cover, textareaOnly: true },
     ];
   }
 
@@ -268,10 +294,62 @@
 
   chrome.runtime.onMessage.addListener((msg, sender, send) => {
     if (!msg) return false;
-    if (msg.type === "autofill") { send({ filled: autofill(msg.profile || {}, { cover: msg.cover || "" }, msg.learned || {}) }); return true; }
-    if (msg.type === "learn") { send({ answers: collectAnswers() }); return true; }
+    if (msg.type === "autofill") {
+      // Merge learned answers from storage (source of truth) with any passed in.
+      chrome.storage.local.get([LEARN_KEY, PROFILE_KEY], (d) => {
+        const learned = Object.assign({}, d[LEARN_KEY] || {}, msg.learned || {});
+        const profile = msg.profile || d[PROFILE_KEY] || {};
+        send({ filled: autofill(profile, { cover: msg.cover || "" }, learned) });
+      });
+      return true;
+    }
+    if (msg.type === "learn") {
+      const answers = collectAnswers();
+      chrome.storage.local.get([LEARN_KEY], (d) => {
+        chrome.storage.local.set({ [LEARN_KEY]: Object.assign({}, d[LEARN_KEY] || {}, answers) });
+      });
+      send({ answers });
+      return true;
+    }
     if (msg.type === "attachResume") { send({ attached: attachResume(msg.pdfBase64, msg.filename) }); return true; }
     if (msg.type === "ping") { send({ ok: true }); return true; }
     return false;
   });
+
+  // ── Automatic learning ────────────────────────────────────────────
+  // Whenever the user edits a field, remember it (label -> value, or
+  // question -> chosen option) so it auto-fills on the next application.
+  // No button needed. Sensitive fields are never stored.
+  function autoLearn(el) {
+    if (!el || !el.matches || !el.matches("input, textarea, select")) return;
+    const type = (el.type || "").toLowerCase();
+    if (["hidden", "file", "password", "submit", "button", "checkbox"].includes(type)) return;
+    const lab = labelText(el);
+    if (!lab || isSensitive(lab)) return;
+    let key, entry;
+    if (type === "radio") {
+      if (!el.checked) return;
+      const q = groupLabel(el) || lab; key = keyOf(q);
+      entry = { label: q, type: "choice", value: (labelText(el) || "").slice(0, 60) };
+    } else if (el.tagName === "SELECT") {
+      if (!el.value) return;
+      const t = el.options[el.selectedIndex] ? el.options[el.selectedIndex].text : el.value;
+      key = keyOf(lab); entry = { label: lab, type: "value", value: (t || "").trim() };
+    } else {
+      const v = (el.value || "").trim();
+      if (!v || v.length > 250) return;
+      key = keyOf(lab); entry = { label: lab, type: "value", value: v };
+    }
+    if (!key) return;
+    try {
+      chrome.storage.local.get([LEARN_KEY], (d) => {
+        const L = d[LEARN_KEY] || {};
+        if (JSON.stringify(L[key]) === JSON.stringify(entry)) return;
+        L[key] = entry;
+        chrome.storage.local.set({ [LEARN_KEY]: L });
+      });
+    } catch (e) { /* extension reloaded — context gone; ignore */ }
+  }
+  document.addEventListener("change", (e) => autoLearn(e.target), true);
+  document.addEventListener("focusout", (e) => autoLearn(e.target), true);
 })();
