@@ -105,7 +105,8 @@
     <div class="card">
       <h2>This job <span id="siteBadge" class="badge no">no page</span></h2>
       <button class="btn" id="pullJob">Pull job from this tab</button>
-      <div class="hint">Open a job on LinkedIn or Indeed, then click. Works on the job's detail page.</div>
+      <button class="btn" id="autoApplyBtn" style="margin-top:8px;background:linear-gradient(135deg,var(--accent),#8b5cf6);">⚡ Auto-apply this job (tailor + fill + attach)</button>
+      <div class="hint">Open a job on LinkedIn or Indeed, then click. Auto-apply pulls the JD, tailors the resume to match, fills the form, and stages the resume — you review &amp; submit.</div>
       <div id="jobBox" style="display:none;margin-top:11px;">
         <div class="jobline" id="jTitle"></div>
         <div class="jobco" id="jCompany"></div>
@@ -134,11 +135,15 @@
     </div>
 
     <div class="card" id="applyCard" style="display:none;">
-      <h2>Fill the application</h2>
+      <h2>Fill the application <span id="learnCount" class="badge no" style="font-size:10px;"></span></h2>
       <div class="row-btns">
         <button class="btn" id="autofillBtn">Autofill fields</button>
         <button class="btn sec" id="attachBtn">Attach resume</button>
       </div>
+      <div class="row-btns">
+        <button class="btn ghost" id="rememberBtn">Remember my answers on this page</button>
+      </div>
+      <div class="hint">“Remember my answers” saves any field we didn't recognize (e.g. a new question) so it auto-fills next time.</div>
       <div id="applyMsg"></div>
       <ol class="check" id="checklist"></ol>
     </div>
@@ -204,19 +209,35 @@
         <div class="field"><label class="fl">How did you hear about us?</label><input id="p_source" placeholder="e.g. LinkedIn, Company website"></div>
       </details>
       <div class="two">
-        <div class="field"><label class="fl">Desired salary</label><input id="p_salary" placeholder="e.g. 120000"></div>
-        <div class="field"><label class="fl">Years experience</label><input id="p_years" placeholder="e.g. 6"></div>
+        <div class="field"><label class="fl">Current employer</label><input id="p_currentEmployer"></div>
+        <div class="field"><label class="fl">Current title</label><input id="p_currentTitle"></div>
+      </div>
+      <div class="two">
+        <div class="field"><label class="fl">School / university</label><input id="p_school"></div>
+        <div class="field"><label class="fl">Graduation year</label><input id="p_gradYear"></div>
+      </div>
+      <div class="field"><label class="fl">Degree</label><input id="p_degree"></div>
+      <div class="field"><label class="fl">Tools / software</label><input id="p_tools" placeholder="Bluebeam, RSMeans, Excel…"></div>
+      <div class="two">
+        <div class="field"><label class="fl">Desired salary</label><input id="p_salary" placeholder="e.g. 80000"></div>
+        <div class="field"><label class="fl">Years experience</label><input id="p_years" placeholder="e.g. 2"></div>
       </div>
       <div class="field"><label class="fl">Notice / earliest start</label><input id="p_notice" placeholder="e.g. 2 weeks"></div>
       <div class="two">
         <div class="field"><label class="fl">Authorized to work?</label>
-          <select id="p_workAuth"><option value="true">Yes</option><option value="false">No</option></select></div>
+          <select id="p_workAuth"><option value="">— set this —</option><option value="true">Yes</option><option value="false">No</option></select></div>
         <div class="field"><label class="fl">Need sponsorship?</label>
-          <select id="p_sponsorship"><option value="false">No</option><option value="true">Yes</option></select></div>
+          <select id="p_sponsorship"><option value="">— set this —</option><option value="false">No</option><option value="true">Yes</option></select></div>
       </div>
+      <div class="msg info" style="margin-bottom:9px;">Set work-authorization &amp; sponsorship yourself — the tool never guesses these. Left blank, it won't answer them.</div>
       <button class="btn" id="saveProfile">Save profile</button>
+      <div class="row-btns">
+        <button class="btn sec" id="exportProfile">Export profile</button>
+        <label class="btn ghost" style="cursor:pointer;"><input type="file" id="importProfile" accept=".json" hidden>Import profile</label>
+      </div>
     </div>
-    <div class="foot">Everything stays in this browser (extension storage). Nothing is uploaded to any server.</div>
+    <div class="foot">Everything stays in this browser (extension storage). Nothing is uploaded to any server.
+      Learned answers &amp; profile can be exported/imported as a JSON file.</div>
   </div>
 
   <div id="toast"></div>

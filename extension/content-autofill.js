@@ -80,23 +80,49 @@
       { re: /salary|compensation|expected pay|desired pay|pay expectation|rate/, val: profile.salary },
       { re: /years.*experience|experience.*years|\byoe\b/, val: profile.years },
       { re: /notice period|start date|availability|when.*(start|available)|earliest/, val: profile.notice },
+      { re: /current employer|company name|employer|organization name/, val: profile.currentEmployer },
+      { re: /current title|job title|current (role|position)|position title/, val: profile.currentTitle },
+      { re: /school|university|college|institution/, val: profile.school },
+      { re: /degree|qualification|field of study|major/, val: profile.degree },
+      { re: /graduat|grad year|year of completion|expected completion/, val: profile.gradYear },
+      { re: /tools|software|technolog|proficien|skills/, val: profile.tools, textareaOnly: true },
       { re: /how did you (hear|find)|source|referr/, val: profile.source || "Company website" },
       { re: /cover letter|why.*(you|interest)|message to|motivat|additional info|tell us|anything else/, val: ctx.cover, textareaOnly: true },
     ];
   }
 
+  // ── Field-memory helpers (adaptive learning) ──────────────────────
+  function keyOf(label) {
+    return (label || "").toLowerCase().replace(/[^a-z0-9 ]/g, " ")
+      .replace(/\s+/g, " ").trim().split(" ").slice(0, 8).join(" ");
+  }
+  function groupLabel(el) {
+    const g = el.closest("fieldset, [role='radiogroup'], [class*='question'], [class*='form-group'], [data-automation-id*='formField']");
+    if (g) {
+      const l = g.querySelector("legend, label, .label, [class*='label'], [id$='-label']");
+      if (l && !l.contains(el)) return (l.innerText || "").trim();
+      // fallback: the group's leading text minus option text
+      const t = (g.innerText || "").trim();
+      if (t) return t.split("\n")[0];
+    }
+    return "";
+  }
+  // Sensitive labels we never store into learned memory.
+  function isSensitive(lab) {
+    return /gender|race|ethnic|veteran|disab|hispanic|latino|sexual|ssn|social security|date of birth|\bdob\b|password/.test(lab);
+  }
+
   function fillYesNo(profile) {
     let n = 0;
-    // Radio/select questions for work authorization & sponsorship.
     const groups = document.querySelectorAll("fieldset, [role='radiogroup'], [class*='question'], [class*='field']");
     groups.forEach((g) => {
       const t = (g.innerText || "").toLowerCase();
       let want = null;
-      if (/authoriz(ed|ation) to work|legally.*work|right to work|work permit/.test(t)) want = profile.workAuth !== false;
-      else if (/sponsor|visa/.test(t)) want = profile.sponsorship === true;
-      if (want === null) return;
+      if (/authoriz(ed|ation) to work|legally.*work|right to work|work permit/.test(t)) want = profile.workAuth;
+      else if (/sponsor|visa/.test(t)) want = profile.sponsorship;
+      // Only answer if the user has explicitly set a value (true/false) — never guess.
+      if (want !== true && want !== false) return;
       const wantText = want ? "yes" : "no";
-      // radios
       const radios = g.querySelectorAll("input[type=radio]");
       for (const r of radios) {
         const lab = labelText(r);
@@ -105,14 +131,55 @@
           break;
         }
       }
-      // selects
       const sel = g.querySelector("select");
       if (sel && !sel.value) { if (selectMatch(sel, wantText)) n++; }
     });
     return n;
   }
 
-  function autofill(profile, ctx) {
+  // Respectfully decline demographic / EEO self-identification (never fabricate).
+  function fillEEO() {
+    let n = 0;
+    const demo = /gender|race|ethnic|veteran|disab|hispanic|latino/;
+    const decline = /decline|prefer not|don.?t wish|do not wish|not to answer|not to disclose|not to identify/i;
+    document.querySelectorAll("select").forEach((sel) => {
+      const lab = labelText(sel);
+      if (!demo.test(lab) || sel.value) return;
+      for (const opt of sel.options) { if (decline.test(opt.text)) { sel.value = opt.value; sel.dispatchEvent(new Event("change", { bubbles: true })); n++; break; } }
+    });
+    const seen = new Set();
+    document.querySelectorAll("input[type=radio]").forEach((r) => {
+      const q = (groupLabel(r) || labelText(r)).toLowerCase();
+      if (!demo.test(q)) return;
+      const k = keyOf(q); if (seen.has(k)) return; seen.add(k);
+      const radios = Array.from(document.querySelectorAll('input[type=radio][name="' + (window.CSS && CSS.escape ? CSS.escape(r.name) : r.name) + '"]'));
+      if (radios.some((x) => x.checked)) return;
+      for (const x of radios) { if (decline.test(labelText(x))) { x.click(); n++; break; } }
+    });
+    return n;
+  }
+
+  // Apply learned radio/select choices by matching the remembered question.
+  function applyLearnedChoices(learned) {
+    let n = 0;
+    const groups = new Map();
+    document.querySelectorAll("input[type=radio]").forEach((r) => {
+      const k = keyOf(groupLabel(r) || labelText(r));
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(r);
+    });
+    for (const [k, radios] of groups) {
+      const L = learned[k];
+      if (!L || L.type !== "choice") continue;
+      if (radios.some((r) => r.checked)) continue;
+      const want = String(L.value).toLowerCase();
+      for (const r of radios) { if (labelText(r).includes(want)) { r.click(); n++; break; } }
+    }
+    return n;
+  }
+
+  function autofill(profile, ctx, learned) {
+    learned = learned || {};
     const rules = buildRules(profile, ctx);
     let filled = 0;
     const fields = Array.from(document.querySelectorAll("input, textarea, select"));
@@ -123,6 +190,14 @@
       if (el.value && el.value.trim()) continue; // never overwrite
       const lab = labelText(el);
       if (!lab) continue;
+      const key = keyOf(lab);
+      // 1) learned value from a previous application wins
+      const L = learned[key];
+      if (L && L.type === "value" && L.value) {
+        if (el.tagName === "SELECT") { if (selectMatch(el, L.value)) { filled++; continue; } }
+        else { setNative(el, L.value); flash(el); filled++; continue; }
+      }
+      // 2) built-in rules
       for (const r of rules) {
         if (r.textareaOnly && el.tagName !== "TEXTAREA") continue;
         if (r.val && r.re.test(lab)) {
@@ -132,8 +207,32 @@
         }
       }
     }
+    filled += applyLearnedChoices(learned);
     filled += fillYesNo(profile);
+    filled += fillEEO();
     return filled;
+  }
+
+  // Snapshot every answered field so unknown ones are remembered for next time.
+  function collectAnswers() {
+    const out = {};
+    const fields = Array.from(document.querySelectorAll("input, textarea, select"));
+    for (const el of fields) {
+      const type = (el.type || "").toLowerCase();
+      if (["hidden", "file", "password", "submit", "button"].includes(type)) continue;
+      const lab = labelText(el);
+      if (!lab || isSensitive(lab)) continue;
+      if (type === "radio") {
+        if (el.checked) { const q = groupLabel(el) || lab; out[keyOf(q)] = { label: q, type: "choice", value: (labelText(el) || "").slice(0, 60) }; }
+      } else if (type === "checkbox") {
+        // skip — consent boxes shouldn't be auto-restored
+      } else if (el.tagName === "SELECT") {
+        if (el.value) { const t = el.options[el.selectedIndex] ? el.options[el.selectedIndex].text : el.value; out[keyOf(lab)] = { label: lab, type: "value", value: t.trim() }; }
+      } else {
+        if (el.value && el.value.trim()) out[keyOf(lab)] = { label: lab, type: "value", value: el.value.trim() };
+      }
+    }
+    return out;
   }
 
   function flash(el) {
@@ -169,7 +268,8 @@
 
   chrome.runtime.onMessage.addListener((msg, sender, send) => {
     if (!msg) return false;
-    if (msg.type === "autofill") { send({ filled: autofill(msg.profile || {}, { cover: msg.cover || "" }) }); return true; }
+    if (msg.type === "autofill") { send({ filled: autofill(msg.profile || {}, { cover: msg.cover || "" }, msg.learned || {}) }); return true; }
+    if (msg.type === "learn") { send({ answers: collectAnswers() }); return true; }
     if (msg.type === "attachResume") { send({ attached: attachResume(msg.pdfBase64, msg.filename) }); return true; }
     if (msg.type === "ping") { send({ ok: true }); return true; }
     return false;
