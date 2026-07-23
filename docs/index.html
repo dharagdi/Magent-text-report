@@ -1213,7 +1213,14 @@ function _content2text(c){let text="",i=0;const n=c.length;
     i++;}return text;}
 function extractPdfText(bytes){
   const raw=_l1(bytes);let content="";const re=/stream\r?\n/g;let m;
+  // Skip non-text streams whose object dict marks them as font programs, image
+  // XObjects, or object streams — their bytes contain stray "Tj"/"BT" and would
+  // otherwise pollute the extracted text (common with LaTeX-embedded fonts).
+  const SKIP=/\/(FontFile\d?|Length1|Type1C|CIDFontType0C|ObjStm)\b|\/Subtype\s*\/(Image|Type1C|CIDFontType0C)/;
   while((m=re.exec(raw))){const ss=m.index+m[0].length;const ei=raw.indexOf("endstream",ss);if(ei<0)continue;
+    const objStart=raw.lastIndexOf("obj",m.index);
+    const dict=objStart>=0?raw.slice(objStart, m.index):"";
+    if(SKIP.test(dict)){ re.lastIndex=ei+9; continue; }
     let end=ei;if(raw[end-1]==="\n")end--;if(raw[end-1]==="\r")end--;const slice=bytes.subarray(ss,end);let dec;
     try{ if(slice.length>2&&(slice[0]&0x0f)===8&&(((slice[0]<<8|slice[1])%31)===0))dec=zInflate(slice); else dec=slice; }catch(e){dec=null;}
     if(dec){const s=_l1(dec);if(s.indexOf("Tj")>=0||s.indexOf("TJ")>=0||s.indexOf(" Td")>=0||s.indexOf("BT")>=0)content+=_content2text(s)+"\n";}
